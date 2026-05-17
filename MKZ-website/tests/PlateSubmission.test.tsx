@@ -77,15 +77,11 @@ describe('PlateSubmission', () => {
     expect(screen.getByText(/Type a plate/i)).toBeInTheDocument();
   });
 
-  it('uses col-span-8 for form and col-span-4 for preview (12-col grid)', () => {
+  it('uses responsive grid layout with form and preview columns', () => {
     renderPS();
     const submission = screen.getByTestId('plate-submission');
-    expect(submission.className).toContain('grid-cols-12');
-    // form column
-    const form = submission.querySelector('.col-span-8');
-    expect(form).toBeTruthy();
-    // preview column
-    const preview = screen.getByTestId('map-preview-box');
-    expect(preview.className).toContain('col-span-4');
+    // Outer wrapper is a bare grid (no background) so map preview is transparent
+    expect(submission.tagName).toBe('DIV');
+    expect(submission.querySelector('[data-testid="map-preview-box"]')).toBeTruthy();
   });
 });

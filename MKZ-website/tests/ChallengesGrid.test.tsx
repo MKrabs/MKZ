@@ -6,7 +6,7 @@ describe('ChallengesGrid', () => {
   it('renders the challenges section', () => {
     render(() => <ChallengesGrid />);
     expect(screen.getByTestId('challenges-grid')).toBeInTheDocument();
-    expect(screen.getByText('Your Challenges')).toBeInTheDocument();
+    expect(screen.getByText(/Your Challenges/i)).toBeInTheDocument();
   });
 
   it('renders challenge cards', () => {

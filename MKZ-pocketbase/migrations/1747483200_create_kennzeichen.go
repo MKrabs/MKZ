@@ -767,11 +767,11 @@ func upCreateKennzeichen(app core.App) error {
 	collection := core.NewBaseCollection("kennzeichen")
 
 	// Public read access; no write access from API (managed via migrations/admin)
-	collection.ListRule = types.Pointer("")   // public — anyone can list/search kennzeichen
-	collection.ViewRule = types.Pointer("")   // public — anyone can view a kennzeichen record
-	collection.CreateRule = nil               // superusers only
-	collection.UpdateRule = nil               // superusers only
-	collection.DeleteRule = nil               // superusers only
+	collection.ListRule = types.Pointer("")   // public
+	collection.ViewRule = types.Pointer("")   // public
+	collection.CreateRule = nil // admin only
+	collection.UpdateRule = nil // admin only
+	collection.DeleteRule = nil // admin only
 
 	collection.Fields.Add(
 		&core.TextField{
