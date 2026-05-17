@@ -1,6 +1,7 @@
 import { Component, Show, createSignal, createEffect, onCleanup } from 'solid-js';
 import LicensePlate from '../common/LicensePlate';
 import Button from '../common/Button';
+import LoginNudge from '../common/LoginNudge';
 import { useMap } from '../map/MapContext';
 import { extractPlatePrefix } from '../../data/plateRegions';
 import { lookupCode, type KennzeichenRecord } from '../../api/kennzeichen';
@@ -302,12 +303,9 @@ const PlateSubmission: Component = () => {
 
             {/* ── Not logged in ── */}
             <Show when={!user()}>
-              <p class="text-sm text-gray-500" data-testid="sign-in-to-collect">
-                <span class="text-mkz-primary font-medium cursor-pointer hover:underline">
-                  Sign in
-                </span>{' '}
-                to add this to your collection.
-              </p>
+              <div data-testid="sign-in-to-collect">
+                <LoginNudge />
+              </div>
             </Show>
 
             {/* ── Logged in ── */}

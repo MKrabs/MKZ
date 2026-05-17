@@ -121,6 +121,23 @@ describe('PlateSubmission — anonymous', () => {
     expect(screen.queryByTestId('mark-seen-btn')).toBeNull();
   });
 
+  it('shows whimsical login-nudge component (not plain text) when plate is found anonymously', async () => {
+    col('kennzeichen').getFirstListItem.mockResolvedValueOnce(KA_KZ);
+    col('seen_plates').getFirstListItem.mockRejectedValueOnce(new Error('nf'));
+
+    renderPS();
+    typeInPlate('KA NR 355');
+    await vi.advanceTimersByTimeAsync(450);
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+
+    // The whimsical nudge component must be present
+    expect(screen.getByTestId('login-nudge')).toBeInTheDocument();
+    // Must have the animated SVG arrow
+    expect(screen.getByTestId('login-nudge-arrow')).toBeInTheDocument();
+    // Must NOT show the submit button
+    expect(screen.queryByTestId('mark-seen-btn')).toBeNull();
+  });
+
   it('checks seen_plates by exact plate_text (requires logged-in user)', async () => {
     mockUser = { id: 'user123', name: 'Max', email: 'max@test.com' }; // need auth
     col('kennzeichen').getFirstListItem.mockResolvedValueOnce(KA_KZ);
