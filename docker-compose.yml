@@ -1,0 +1,34 @@
+services:
+
+  # ── MKZ PocketBase backend ──────────────────────────────────────────────────
+  # Serves the REST API + admin UI on port 8090 (internal only).
+  # Migrations run automatically on first start and seed all 714 Kennzeichen.
+  mkz-pocketbase:
+    image: ghcr.io/mkrabs/mkz-pocketbase:latest
+    container_name: mkz-pocketbase
+    restart: unless-stopped
+    volumes:
+      - /mnt/Toshiba/mkz/pb_data:/app/pb_data
+    networks:
+      - nginx_default
+    # Port is intentionally NOT exposed to the host — access via the reverse proxy.
+
+  # ── MKZ Website frontend ────────────────────────────────────────────────────
+  # Caddy serves the SolidJS SPA on port 80 (internal only).
+  # PB_URL must be the *public* URL the user's browser will reach PocketBase at
+  # (e.g. https://mkz-api.yourdomain.com). It is injected into /srv/env.js
+  # at container start by docker-entrypoint.sh.
+  mkz-website:
+    image: ghcr.io/mkrabs/mkz-website:latest
+    container_name: mkz-website
+    restart: unless-stopped
+    environment:
+      PB_URL: https://mkz-api.yourdomain.com   # ← change to your PocketBase domain
+    networks:
+      - nginx_default
+    depends_on:
+      - mkz-pocketbase
+
+networks:
+  nginx_default:
+    external: true   # already created by your reverse proxy stack
