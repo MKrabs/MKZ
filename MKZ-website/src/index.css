@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Abominable';
+  src: url('./assets/fonts/Abominable-Bold-fc.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Abominable';
+  src: url('./assets/fonts/Abominable-Condensed-fc.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@theme {
+  --font-display: 'Abominable', sans-serif;
+  --color-plate-blue: #003399;
+  --color-plate-bg: #ffffff;
+  --color-plate-border: #000000;
+  --color-mkz-primary: #2563eb;
+  --color-mkz-secondary: #1e40af;
+  --color-mkz-accent: #f59e0b;
+  --color-mkz-bg: #f8fafc;
+  --color-mkz-card: #ffffff;
+}

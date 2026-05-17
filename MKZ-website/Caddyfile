@@ -1,0 +1,7 @@
+# SPA routing: serve index.html for any path that doesn't match a real file.
+:80 {
+    root * /srv
+    encode gzip
+    try_files {path} /index.html
+    file_server
+}

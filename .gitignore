@@ -1,0 +1,12 @@
+# Website
+MKZ-website/node_modules/
+MKZ-website/dist/
+
+# PocketBase
+MKZ-pocketbase/pb_data/
+MKZ-pocketbase/pocketbase
+
+# IDE
+.idea/
+.vscode/
+*.swp

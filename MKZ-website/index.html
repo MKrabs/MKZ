@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MKZ - License Plate Collector</title>
+    <!--
+      env.js is written by docker-entrypoint.sh at container start.
+      In local dev the file from public/env.js is served (sets localhost defaults).
+    -->
+    <script src="/env.js"></script>
+  </head>
+  <body class="bg-black min-h-screen">
+    <div id="root"></div>
+    <script src="/src/index.tsx" type="module"></script>
+  </body>
+</html>
