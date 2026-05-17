@@ -57,6 +57,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Docker image names must be lowercase; GitHub usernames can be mixed-case.
+      - name: Lowercase registry owner
+        run: echo "OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       # QEMU enables cross-compilation for arm64 on the amd64 runner
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -79,8 +83,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/mkz-website:${{ github.ref_name }}
-            ghcr.io/${{ github.repository_owner }}/mkz-website:latest
+            ghcr.io/${{ env.OWNER_LC }}/mkz-website:${{ github.ref_name }}
+            ghcr.io/${{ env.OWNER_LC }}/mkz-website:latest
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.version=${{ github.ref_name }}
@@ -96,8 +100,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/mkz-pocketbase:${{ github.ref_name }}
-            ghcr.io/${{ github.repository_owner }}/mkz-pocketbase:latest
+            ghcr.io/${{ env.OWNER_LC }}/mkz-pocketbase:${{ github.ref_name }}
+            ghcr.io/${{ env.OWNER_LC }}/mkz-pocketbase:latest
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.version=${{ github.ref_name }}
