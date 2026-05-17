@@ -4,8 +4,11 @@ services:
     image: ghcr.io/mkrabs/mkz:${MKZ_VERSION:-latest}
     container_name: mkz
     restart: unless-stopped
-    ports:
-      - "${MKZ_PORT:-80}:80"
+    # No host port mapping needed — NPM reaches the container directly
+    # via the shared Docker network using 'mkz:80'.
+    # Uncomment below only if you need direct host access (e.g. for testing):
+    # ports:
+    #   - "${MKZ_PORT:-8998}:80"
     volumes:
       - ${MKZ_DATA_DIR:?MKZ_DATA_DIR required — e.g. /mnt/Toshiba/mkz}/pb_data:/app/pb_data
     networks:
