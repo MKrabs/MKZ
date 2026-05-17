@@ -1,0 +1,20 @@
+:80 {
+    encode gzip
+
+    # PocketBase: REST API
+    handle /api/* {
+        reverse_proxy localhost:8090
+    }
+
+    # PocketBase: admin dashboard
+    handle /_/* {
+        reverse_proxy localhost:8090
+    }
+
+    # SolidJS SPA — all other paths fall back to index.html
+    handle {
+        root * /srv
+        try_files {path} /index.html
+        file_server
+    }
+}

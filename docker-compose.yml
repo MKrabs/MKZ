@@ -1,28 +1,19 @@
 services:
 
-  mkz-pocketbase:
-    image: ghcr.io/mkrabs/mkz-pocketbase:${MKZ_VERSION:-latest}
-    container_name: mkz-pocketbase
+  mkz:
+    image: ghcr.io/mkrabs/mkz:${MKZ_VERSION:-latest}
+    container_name: mkz
     restart: unless-stopped
     ports:
-      - "${MKZ_PB_PORT:-8090}:8090"
+      - "${MKZ_PORT:-80}:80"
     volumes:
       - ${MKZ_DATA_DIR:?MKZ_DATA_DIR required — e.g. /mnt/Toshiba/mkz}/pb_data:/app/pb_data
     networks:
       - proxy
-
-  mkz-website:
-    image: ghcr.io/mkrabs/mkz-website:${MKZ_VERSION:-latest}
-    container_name: mkz-website
-    restart: unless-stopped
-    ports:
-      - "${MKZ_WEB_PORT:-80}:80"
-    environment:
-      PB_URL: ${PB_URL:?PB_URL required — public URL the browser uses to reach PocketBase}
-    networks:
-      - proxy
-    depends_on:
-      - mkz-pocketbase
+    # PB_URL is optional — omit it (or set to "") for same-origin routing.
+    # Only set it if PocketBase is exposed on a separate public domain.
+    # environment:
+    #   PB_URL: https://pb.yourdomain.com
 
 networks:
   proxy:
