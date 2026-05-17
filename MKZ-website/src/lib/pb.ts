@@ -14,7 +14,12 @@ import PocketBase from 'pocketbase';
 function resolvePbUrl(): string {
   try {
     const runtimeUrl = (window as any).__ENV__?.PB_URL;
-    if (runtimeUrl) return runtimeUrl;
+    // Use typeof check — NOT a truthy check — so that an empty string (same-origin
+    // mode set by docker-entrypoint.sh) is returned as-is instead of falling
+    // through to the hardcoded 127.0.0.1 loopback fallback.
+    // PocketBase SDK treats "" as same-origin relative paths (/api/…),
+    // which Caddy then proxies internally to localhost:8090.
+    if (typeof runtimeUrl === 'string') return runtimeUrl;
   } catch {
     // Non-browser environment (SSR, tests)
   }
