@@ -61,9 +61,8 @@ jobs:
       - name: Lowercase registry owner
         run: echo "OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      # QEMU enables cross-compilation for arm64 on the amd64 runner
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      # QEMU / Buildx are only needed for cross-platform builds.
+      # Removed: we only target linux/amd64 (matches the production server).
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -80,7 +79,11 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          # amd64 only — the production server is x86_64.
+          # arm64 was previously included but compiled via QEMU emulation,
+          # adding ~7 minutes (401 s vs 50 s) for zero benefit.
+          # Re-add linux/arm64 only if the server ever moves to ARM.
+          platforms: linux/amd64
           push: true
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/mkz:${{ github.ref_name }}
