@@ -12,9 +12,6 @@ const App: Component = () => {
       {/* Sticky title bar — sits above the globe */}
       <TitleBar />
 
-      {/* Region plate markers on map */}
-      <RegionMarkers />
-
       {/* Idle animation controller */}
       <IdleController />
 
