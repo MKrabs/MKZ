@@ -77,24 +77,14 @@ describe('GlobeMap — idle animation', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => { vi.useRealTimers(); vi.clearAllMocks(); });
 
-  it('starts easeTo panning after load', async () => {
-    render(() => <GlobeMap />);
+  it('sets idle state to true after load', async () => {
+    let isIdle!: () => boolean;
+    const Consumer = () => { isIdle = useMap().isIdle; return <div />; };
+    render(() => <GlobeMap><Consumer /></GlobeMap>);
     vi.runOnlyPendingTimers();
     await Promise.resolve();
 
-    const m = await getMock();
-    expect(m.easeTo).toHaveBeenCalled();
-  });
-
-  it('idle easeTo uses bearing:0 and pitch:0 (north always up, flat)', async () => {
-    render(() => <GlobeMap />);
-    vi.runOnlyPendingTimers();
-    await Promise.resolve();
-
-    const m = await getMock();
-    const opts = m.easeTo.mock.calls[0]?.[0];
-    expect(opts?.bearing).toBe(0);
-    expect(opts?.pitch).toBe(0);
+    expect(isIdle()).toBe(true);
   });
 
   it('disables touch rotation after load', async () => {

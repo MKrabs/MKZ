@@ -102,3 +102,34 @@
   background: #555;
   border-radius: 0 0 1px 1px;
 }
+
+/* ── Idle Controller: typing cursor animation ───────────────────────────── */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.idle-typing {
+  font-family: monospace;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.idle-cursor {
+  animation: blink-cursor 1s step-end infinite;
+  margin-left: 1px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.idle-fun-fact {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+  padding: 0.25rem 0.5rem;
+}

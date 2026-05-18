@@ -22,27 +22,10 @@ const FLAT_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 
 // ─── Idle animation constants ─────────────────────────────────────────────────
 
-/**
- * Waypoints for the idle slow-pan tour [longitude, latitude].
- */
-const IDLE_WAYPOINTS: [number, number][] = [
-  [10.0, 51.0],   // Germany centre
-  [13.4, 52.5],   // Berlin
-  [4.9, 52.4],    // Amsterdam
-  [2.35, 48.85],  // Paris
-  [16.4, 48.2],   // Vienna
-  [9.2, 45.5],    // Milan area
-  [11.6, 48.1],   // Munich
-];
-
-/** Zoom level held during idle pan */
-const IDLE_ZOOM = 5;
-/** Duration (ms) to ease to each waypoint */
-const IDLE_PAN_DURATION = 18_000;
-/** Extra pause (ms) between waypoints */
-const IDLE_PAUSE_MS = 3_000;
 /** How long (ms) to stay on a flyTo'd city before resuming idle */
 const IDLE_RESUME_DELAY = 10_000;
+/** Default zoom level for idle state */
+const IDLE_ZOOM = 5;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -61,8 +44,6 @@ const GlobeMap: Component<GlobeMapProps> = (props) => {
 
   // Idle state
   let idleActive = false;
-  let idleWaypointIdx = 0;
-  let idlePanTimeoutId: ReturnType<typeof setTimeout> | null = null;
   let idleResumeTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   // ── Idle animation ────────────────────────────────────────────────────
@@ -73,7 +54,6 @@ const GlobeMap: Component<GlobeMapProps> = (props) => {
 
     idleActive = true;
     setIsIdle(true);
-    panNextWaypoint(m);
   }
 
   function stopIdle() {
@@ -82,36 +62,12 @@ const GlobeMap: Component<GlobeMapProps> = (props) => {
     idleActive = false;
     setIsIdle(false);
 
-    if (idlePanTimeoutId) {
-      clearTimeout(idlePanTimeoutId);
-      idlePanTimeoutId = null;
-    }
     if (idleResumeTimeoutId) {
       clearTimeout(idleResumeTimeoutId);
       idleResumeTimeoutId = null;
     }
 
     mapRef?.stop();
-  }
-
-  function panNextWaypoint(m: maplibregl.Map) {
-    if (!idleActive) return;
-
-    const center = IDLE_WAYPOINTS[idleWaypointIdx % IDLE_WAYPOINTS.length];
-    idleWaypointIdx++;
-
-    m.easeTo({
-      center,
-      zoom: IDLE_ZOOM,
-      bearing: 0,
-      pitch: 0,
-      duration: IDLE_PAN_DURATION,
-    });
-
-    idlePanTimeoutId = setTimeout(
-      () => panNextWaypoint(m),
-      IDLE_PAN_DURATION + IDLE_PAUSE_MS,
-    );
   }
 
   // ── flyToCity ─────────────────────────────────────────────────────────
