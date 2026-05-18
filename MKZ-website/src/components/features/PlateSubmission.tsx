@@ -4,7 +4,7 @@ import Button from '../common/Button';
 import LoginNudge from '../common/LoginNudge';
 import { useMap } from '~/components/map';
 import { extractPlatePrefix } from '~/data/plateRegions';
-import { lookupCode, type KennzeichenRecord } from '~/api/kennzeichen';
+import { lookupCode, fetchGeoRegions, type KennzeichenRecord } from '~/api/kennzeichen';
 import {
   checkSeen,
   markSeen,
@@ -15,13 +15,14 @@ import {
   type SeenPlateRecord,
 } from '~/api/seenPlates';
 import { user } from '~/store/auth';
-import { BUNDESLAND_COORDS, BUNDESLAND_ZOOM } from '~/data/bundeslandCoords';
 import RegionCallout, { type RegionData } from './RegionCallout';
 import { IDLE_CODE_EVENT, HOME_PLACEHOLDER, type IdlePlateCodeEvent } from '~/components/features/IdleController';
+import MapRegionHighlighter from '~/components/map/MapRegionHighlighter';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const LOOKUP_DEBOUNCE = 400;
+const REGION_ZOOM     = 9;
 
 const NO_PHOTO_MSGS = [
   "🕵️ On the record — but where's the photo?",
@@ -46,6 +47,53 @@ function pickMsg(msgs: string[], text: string): string {
   let hash = 0;
   for (let i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) & 0xffff;
   return msgs[hash % msgs.length];
+}
+
+// ─── Centroid helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Flatten any GeoJSON geometry (Polygon or MultiPolygon) into a flat
+ * list of [lon, lat] coordinate pairs from the outer rings only.
+ */
+function flattenCoords(geometry: any): [number, number][] {
+  if (!geometry) return [];
+  if (geometry.type === 'Polygon') {
+    // First ring = outer ring
+    return geometry.coordinates[0] as [number, number][];
+  }
+  if (geometry.type === 'MultiPolygon') {
+    // Outer ring of each polygon
+    return (geometry.coordinates as number[][][][])
+      .flatMap((poly) => poly[0] as [number, number][]);
+  }
+  return [];
+}
+
+/**
+ * Compute the simple bounding-box centre of a set of [lon, lat] pairs.
+ * Good enough for panning — no need for a full centroid algorithm.
+ */
+function bboxCenter(coords: [number, number][]): [number, number] | null {
+  if (coords.length === 0) return null;
+  let minLon = Infinity, maxLon = -Infinity;
+  let minLat = Infinity, maxLat = -Infinity;
+  for (const [lon, lat] of coords) {
+    if (lon < minLon) minLon = lon;
+    if (lon > maxLon) maxLon = lon;
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+  }
+  return [(minLon + maxLon) / 2, (minLat + maxLat) / 2];
+}
+
+/**
+ * Given an array of GeoRegionRecords, compute the overall bounding-box
+ * centre across all their geometries. Handles multi-region codes (KA etc.)
+ * by finding the centre of the combined extent.
+ */
+function regionsCenter(regions: { low: any }[]): [number, number] | null {
+  const allCoords = regions.flatMap((r) => flattenCoords(r.low));
+  return bboxCenter(allCoords);
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -98,13 +146,22 @@ const PlateSubmission: Component = () => {
         prefixChanged ? lookupCode(prefix) : Promise.resolve(kennzeichen()),
         user() ? checkSeen(user()!.id, text) : Promise.resolve(null),
       ]);
+
       if (prefixChanged) {
         setKennzeichen(kz);
+
         if (kz) {
-          const coords = BUNDESLAND_COORDS[kz.bundesland_iso];
-          if (coords) mapCtx.flyToCoords(coords, BUNDESLAND_ZOOM, computePreviewOffset());
+          // Fetch geo regions to get the actual geometry for panning.
+          // fetchGeoRegions is also called by MapRegionHighlighter — the
+          // PocketBase SDK will deduplicate in-flight identical requests.
+          const regions = await fetchGeoRegions(kz.id, 'low');
+          const center  = regionsCenter(regions);
+          if (center) {
+            mapCtx.flyToCoords(center, REGION_ZOOM, computePreviewOffset());
+          }
         }
       }
+
       setSeenRecord(kz ? seen : null);
     } finally {
       setLookupLoading(false);
@@ -117,23 +174,19 @@ const PlateSubmission: Component = () => {
     lookupTimer = setTimeout(() => void performLookup(text), LOOKUP_DEBOUNCE);
   }
 
-  // Drive lookup from the real input value.
   createEffect(() => {
     const raw = plateText();
     raw.trim() !== '' ? scheduleLookupFor(raw) : clearLookup();
   });
 
-  // Drive lookup from idle animation events.
   onMount(() => {
     const input = document.querySelector<HTMLInputElement>('[data-testid="license-plate-input"]');
     if (!input) return;
-
     const onIdleCode = (e: Event) => {
       const { code, active } = (e as IdlePlateCodeEvent).detail;
       if (!active || code === '') { clearLookup(); return; }
       scheduleLookupFor(code);
     };
-
     input.addEventListener(IDLE_CODE_EVENT, onIdleCode);
     onCleanup(() => input.removeEventListener(IDLE_CODE_EVENT, onIdleCode));
   });
@@ -141,11 +194,10 @@ const PlateSubmission: Component = () => {
   // ── Mark seen ─────────────────────────────────────────────────────────────
 
   const handleMarkSeen = async () => {
-    const kz = kennzeichen();
-    const u = user();
+    const kz   = kennzeichen();
+    const u    = user();
     const text = plateText().trim().toUpperCase();
     if (!kz || !u || !text) return;
-
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -186,7 +238,7 @@ const PlateSubmission: Component = () => {
 
   const handleAddPhoto = async (e: Event) => {
     const file = (e.target as HTMLInputElement).files?.[0];
-    const rec = seenRecord();
+    const rec  = seenRecord();
     if (!file || !rec) return;
     setSubmitting(true);
     setSubmitError(null);
@@ -235,14 +287,16 @@ const PlateSubmission: Component = () => {
     const kz = kennzeichen();
     if (!kz) return null;
     return {
-      code: kz.code,
+      code:         kz.code,
       districtName: kz.district_name,
-      bundesland: kz.bundesland,
-      plateCount: 0,
+      bundesland:   kz.bundesland,
+      plateCount:   0,
       funFacts: [
         `${kz.district_name} uses the prefix "${kz.code}" on license plates.`,
         `Located in ${kz.bundesland}, one of Germany's 16 federal states.`,
-        kz.derivation ? `The code "${kz.code}" derives from: ${kz.derivation}.` : `Region code: ${kz.code}.`,
+        kz.derivation
+          ? `The code "${kz.code}" derives from: ${kz.derivation}.`
+          : `Region code: ${kz.code}.`,
       ],
     };
   });
@@ -406,6 +460,8 @@ const PlateSubmission: Component = () => {
         </div>
       </div>
 
+      <MapRegionHighlighter kennzeichenId={kennzeichen()?.id ?? null} />
+
       <div ref={previewRef} data-testid="map-preview-box" class="relative rounded-xl overflow-hidden min-h-45">
         <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
           <div class="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-white/70 rounded-tl" />
@@ -413,13 +469,11 @@ const PlateSubmission: Component = () => {
           <div class="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-white/70 rounded-bl" />
           <div class="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-white/70 rounded-br" />
         </div>
-
         <Show when={lookupLoading()}>
           <div class="absolute inset-0 flex items-center justify-center">
             <div class="w-6 h-6 border-2 border-white/40 border-t-white/80 rounded-full animate-spin" />
           </div>
         </Show>
-
         <Show when={!kennzeichen() && !lookupLoading()}>
           <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4">
             <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -429,7 +483,6 @@ const PlateSubmission: Component = () => {
             <p class="text-white/50 text-xs text-center leading-relaxed">Type a plate<br />to see the region</p>
           </div>
         </Show>
-
         <Show when={kennzeichen()}>
           <div class="absolute bottom-3 left-0 right-0 flex justify-center">
             <span class="inline-flex items-center gap-1.5 bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-sm font-medium" data-testid="preview-region-badge">
