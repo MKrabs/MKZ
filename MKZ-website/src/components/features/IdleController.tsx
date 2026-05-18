@@ -1,6 +1,6 @@
 import { Component, onMount, onCleanup, createEffect } from 'solid-js';
 import { useMap } from '~/components/map';
-import REGION_LOW from '~/data/region-outlines-low.json';
+import pb from '../../lib/pb';
 
 /**
  * IdleController — placeholder animation across many cities.
@@ -19,26 +19,26 @@ import REGION_LOW from '~/data/region-outlines-low.json';
 const IDLE_MS = 5000;
 const BETWEEN_MS = 5000; // wait after typing before zoom/pan
 const CHAR_INTERVAL = 200;
-const CITY_COUNT = 20;
-
-function pickRandomCities(n: number) {
-  const names: string[] = (REGION_LOW as any).features.map((f: any) => f.properties?.gen).filter(Boolean);
-  // shuffle
-  for (let i = names.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [names[i], names[j]] = [names[j], names[i]];
-  }
-  return names.slice(0, Math.min(n, names.length));
-}
-
 const IdleController: Component = () => {
   const mapCtx = useMap();
-
-  const cities = pickRandomCities(CITY_COUNT);
 
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
   let idle = false;
   let runningSequence = false;
+
+  async function fetchRandomCode(): Promise<string> {
+    try {
+      if (pb && typeof pb.collection === 'function') {
+        const res = await pb.collection('kennzeichen').getList(1, 1, { sort: '@random' });
+        const item = res?.items?.[0];
+        if (item && item.code) return String(item.code).toUpperCase();
+      }
+    } catch (e) {
+      // ignore
+    }
+    const FALLBACK = ['M', 'B', 'KA', 'F', 'K', 'D', 'S'];
+    return FALLBACK[Math.floor(Math.random() * FALLBACK.length)];
+  }
 
   function clearIdleTimer() {
     if (idleTimer) {
@@ -92,17 +92,16 @@ const IdleController: Component = () => {
 
     const originalPlaceholder = input.getAttribute('placeholder') ?? '<city code>';
 
-    for (const city of cities) {
-      if (!idle) break;
-
-      const name = (city || '').trim();
-      const upName = name.toUpperCase();
+    while (idle) {
+      // fetch a fresh random code each iteration
+      const code = await fetchRandomCode();
+      const upName = (code || '').toUpperCase();
 
       // 1) Delete default to empty
       await animateDeletion(input, originalPlaceholder);
       if (!idle) break;
 
-      // 2) Type first 1..2 chars of city name
+      // 2) Type first 1..2 chars of the code
       const two = upName.slice(0, 2);
       await animateTyping(input, two);
       if (!idle) break;
@@ -114,7 +113,7 @@ const IdleController: Component = () => {
       await animateDeletion(input, '');
       if (!idle) break;
 
-      // 3) Type '<', '<C', '<CI', ... up to a few chars
+      // 3) Type '<', '<C', '<CO', ... up to a few chars of the code
       const maxChars = Math.min(5, upName.length);
       for (let i = 0; i <= maxChars && idle; i++) {
         const txt = '<' + upName.slice(0, i);
