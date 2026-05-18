@@ -38,7 +38,8 @@ function renderWithMap(mapMock?: any) {
     map: () => mapMock ?? null,
     flyToCity: vi.fn(),
     flyToCoords: vi.fn(),
-    isIdle: () => false,
+    // For IdleController tests we consider the map to be idle by default
+    isIdle: () => true,
     stopIdle: vi.fn(),
     startIdle: vi.fn(),
   };
