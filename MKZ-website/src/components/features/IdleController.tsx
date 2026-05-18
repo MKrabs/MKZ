@@ -1,187 +1,436 @@
-import { Component, onMount, onCleanup, createEffect } from 'solid-js';
+import { onMount, onCleanup, createEffect, createSignal } from 'solid-js';
 import { useMap } from '~/components/map';
 import pb from '../../lib/pb';
+import type maplibregl from 'maplibre-gl';
 
 /**
- * IdleController — placeholder animation across many cities.
+ * IdleController.tsx
  *
- * Sequence per city:
- * - Start at default '<city code>' placeholder (PlateSubmission sets this)
- * - Delete default one char at a time to empty
- * - Type first 1..2 chars of city name (uppercase) one char at a time
- *   wait briefly, then delete back to empty
- * - Type '<', '<c', '<ci', '<cit', '<city' progressively
- * - Wait, zoom out and pan a bit, restore placeholder, move to next city
- *
- * Only runs when map is idle and input value is empty; user typing cancels it.
+ * Fires a custom "idle:plate-code" event on the input whenever the animation
+ * types a new code, so PlateSubmission can react to it via its normal lookup
+ * path (setPlateText → scheduleLookupFor) without any MutationObserver hacks.
  */
 
-const IDLE_MS = 5000;
-const BETWEEN_MS = 5000; // wait after typing before zoom/pan
-const CHAR_INTERVAL = 200;
-const IdleController: Component = () => {
+
+// ─── Tunables ────────────────────────────────────────────────────────────────
+
+const CHAR_INTERVAL_MS = 80;
+const HOLD_DURATION_MS = 10_000;
+const BETWEEN_CODES_MS = 400;
+const IDLE_STOP_DEBOUNCE_MS = 4_000;
+export const HOME_PLACEHOLDER = 'Suche hier …';
+
+/**
+ * Custom event name fired on the input element.
+ * PlateSubmission listens for this to drive its lookup.
+ */
+export const IDLE_CODE_EVENT = 'idle:plate-code' as const;
+
+export interface IdlePlateCodeEvent extends CustomEvent {
+  detail: {
+    /** The code currently being shown, or '' when cleared back to home */
+    code: string;
+    /** True when the animation is actively running (false = idle stopped) */
+    active: boolean;
+  };
+}
+
+function fireIdleEvent(input: HTMLInputElement, code: string, active: boolean) {
+  input.dispatchEvent(
+    new CustomEvent(IDLE_CODE_EVENT, {
+      bubbles: true,
+      detail: { code, active },
+    }) satisfies IdlePlateCodeEvent,
+  );
+  log(`fireIdleEvent() — code="${code}", active=${active}`);
+}
+
+// ─── Logger ───────────────────────────────────────────────────────────────────
+
+const TAG = '[IdleController]';
+const log = (...args: unknown[]) => console.log(TAG, ...args);
+const warn = (...args: unknown[]) => console.warn(TAG, '⚠️', ...args);
+const err = (...args: unknown[]) => console.error(TAG, '❌', ...args);
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'));
+    const id = setTimeout(resolve, ms);
+    signal.addEventListener('abort', () => {
+      clearTimeout(id);
+      reject(new DOMException('Aborted', 'AbortError'));
+    }, { once: true });
+  });
+}
+
+async function untypeText(
+  setText: (s: string) => void,
+  getText: () => string,
+  signal: AbortSignal,
+  label: string,
+): Promise<void> {
+  log(`untype("${label}") — start, text="${getText()}"`);
+  while (getText().length > 0) {
+    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+    setText(getText().slice(0, -1));
+    await sleep(CHAR_INTERVAL_MS, signal);
+  }
+  log(`untype("${label}") — done`);
+}
+
+async function typeText(
+  setText: (s: string | ((p: string) => string)) => void,
+  text: string,
+  signal: AbortSignal,
+  label: string,
+): Promise<void> {
+  log(`typeText("${label}") — typing "${text}"`);
+  setText('');
+  for (const char of text) {
+    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+    setText((prev: string) => prev + char);
+    await sleep(CHAR_INTERVAL_MS, signal);
+  }
+  log(`typeText("${label}") — done`);
+}
+
+async function fetchRandomCode(): Promise<string> {
+  log('fetchRandomCode() — fetching…');
+  const res = await pb.collection('kennzeichen').getList(1, 1, { sort: '@random' });
+  const code = res.items[0].code;
+  log(`fetchRandomCode() — got "${code}"`);
+  return code;
+}
+
+function createPlaceholderOverlay(input: HTMLInputElement): {
+  setText: (s: string | ((prev: string) => string)) => void;
+  getText: () => string;
+  destroy: () => void;
+} {
+  let anchor: HTMLElement = input.parentElement as HTMLElement;
+  while (anchor && anchor !== document.body) {
+    const pos = getComputedStyle(anchor).position;
+    if (pos !== 'static') break;
+    anchor = anchor.parentElement as HTMLElement;
+  }
+  if (!anchor) anchor = document.body;
+
+  const span = document.createElement('span');
+  span.setAttribute('aria-hidden', 'true');
+  span.setAttribute('data-idle-overlay', 'true');
+
+  const inputStyle = getComputedStyle(input);
+  const inputRect = input.getBoundingClientRect();
+  const anchorRect = anchor.getBoundingClientRect();
+
+  Object.assign(span.style, {
+    position: 'absolute',
+    top: `${inputRect.top - anchorRect.top + anchor.scrollTop}px`,
+    left: `${inputRect.left - anchorRect.left + anchor.scrollLeft}px`,
+    width: `${inputRect.width}px`,
+    height: `${inputRect.height}px`,
+    lineHeight: `${inputRect.height}px`,
+    paddingTop: inputStyle.paddingTop,
+    paddingRight: inputStyle.paddingRight,
+    paddingBottom: inputStyle.paddingBottom,
+    paddingLeft: inputStyle.paddingLeft,
+    fontSize: inputStyle.fontSize,
+    fontFamily: inputStyle.fontFamily,
+    fontWeight: inputStyle.fontWeight,
+    letterSpacing: inputStyle.letterSpacing,
+    color: inputStyle.color,
+    opacity: '0.5',
+    pointerEvents: 'none',
+    userSelect: 'none',
+    zIndex: '9999',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    boxSizing: 'border-box',
+  });
+
+  anchor.appendChild(span);
+  log('createPlaceholderOverlay() — overlay mounted');
+
+  let currentText = '';
+  const setText = (s: string | ((prev: string) => string)) => {
+    currentText = typeof s === 'function' ? s(currentText) : s;
+    span.textContent = currentText;
+  };
+  const getText = () => currentText;
+  const destroy = () => {
+    span.remove();
+    log('createPlaceholderOverlay() — overlay removed');
+  };
+
+  return { setText, getText, destroy };
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+export function IdleController() {
   const mapCtx = useMap();
+  const [inputValue, setInputValue] = createSignal('');
 
-  let idleTimer: ReturnType<typeof setTimeout> | null = null;
-  let idle = false;
-  let runningSequence = false;
+  let loopAbort: AbortController | null = null;
+  let idleStopDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-  async function fetchRandomCode(): Promise<string> {
+  // ── Stop ──────────────────────────────────────────────────────────────────
+
+  function stopAnimation(reason: string) {
+    log(`stopAnimation() — reason="${reason}", loopAbort=${loopAbort ? 'exists' : 'null'}`);
+    if (idleStopDebounceTimer) {
+      clearTimeout(idleStopDebounceTimer);
+      idleStopDebounceTimer = null;
+    }
+    if (!loopAbort) {
+      log('stopAnimation() — nothing running, no-op');
+      return;
+    }
+    loopAbort.abort();
+    loopAbort = null;
+    log('stopAnimation() — loop aborted');
+  }
+
+  function scheduleStop(reason: string) {
+    if (idleStopDebounceTimer) clearTimeout(idleStopDebounceTimer);
+    log(`scheduleStop() — debouncing ${IDLE_STOP_DEBOUNCE_MS}ms, reason="${reason}"`);
+    idleStopDebounceTimer = setTimeout(() => {
+      idleStopDebounceTimer = null;
+      stopAnimation(reason);
+    }, IDLE_STOP_DEBOUNCE_MS);
+  }
+
+  // ── Loop ──────────────────────────────────────────────────────────────────
+
+  async function runLoop(signal: AbortSignal) {
+    log('runLoop() — entered');
+
+    const input = document.querySelector<HTMLInputElement>(
+      '[data-testid="license-plate-input"]',
+    );
+    if (!input) { err('runLoop() — input not found'); return; }
+    if (input.value !== '') { warn(`runLoop() — input has value, not starting`); return; }
+
+    log(`runLoop() — input.placeholder="${input.placeholder}", value="${input.value}"`);
+
+    // Snapshot whatever the placeholder currently says so we can restore it on exit.
+    const originalPlaceholder = input.placeholder;
+
+    let iteration = 0;
+
     try {
-      if (pb && typeof pb.collection === 'function') {
-        const res = await pb.collection('kennzeichen').getList(1, 1, { sort: '@random' });
-        const item = res?.items?.[0];
-        if (item && item.code) return String(item.code).toUpperCase();
+      // Type the home text into the real placeholder to start.
+      log('runLoop() — typing HOME_PLACEHOLDER into input.placeholder');
+      await typeText(
+        (s) => { input.placeholder = typeof s === 'function' ? s(input.placeholder) : s; },
+        HOME_PLACEHOLDER,
+        signal,
+        'initial-home',
+      );
+
+      while (!signal.aborted) {
+        iteration++;
+        log(`── iteration #${iteration} ──`);
+
+        if (input.value !== '') {
+          warn(`  input.value="${input.value}", stopping`);
+          break;
+        }
+
+        // 1. Untype current placeholder.
+        log(`  step 1: untype placeholder`);
+        await untypeText(
+          (s) => { input.placeholder = s; },
+          () => input.placeholder,
+          signal,
+          `iter${iteration}-untype`,
+        );
+        fireIdleEvent(input, '', true);
+
+        // 2. Pause.
+        log(`  step 2: pause ${BETWEEN_CODES_MS}ms`);
+        await sleep(BETWEEN_CODES_MS, signal);
+
+        // 3. Fetch.
+        log(`  step 3: fetch random code`);
+        let code: string;
+        try {
+          code = await fetchRandomCode();
+        } catch (fetchErr) {
+          err(`  fetch failed`, fetchErr);
+          break;
+        }
+        if (signal.aborted) break;
+
+        // 4. Type code into placeholder.
+        log(`  step 4: type code="${code}"`);
+        await typeText(
+          (s) => { input.placeholder = typeof s === 'function' ? s(input.placeholder) : s; },
+          code,
+          signal,
+          `iter${iteration}-code`,
+        );
+        fireIdleEvent(input, code, true);
+        log(`  step 4: fired idle event with code="${code}"`);
+
+        // 5. Hold.
+        log(`  step 5: hold ${HOLD_DURATION_MS}ms`);
+        await sleep(HOLD_DURATION_MS, signal);
+
+        // 6. Untype code.
+        log(`  step 6: untype code`);
+        await untypeText(
+          (s) => { input.placeholder = s; },
+          () => input.placeholder,
+          signal,
+          `iter${iteration}-code-untype`,
+        );
+        fireIdleEvent(input, '', true);
+
+        // 7. Re-type home placeholder.
+        log(`  step 7: type HOME_PLACEHOLDER`);
+        await typeText(
+          (s) => { input.placeholder = typeof s === 'function' ? s(input.placeholder) : s; },
+          HOME_PLACEHOLDER,
+          signal,
+          `iter${iteration}-home`,
+        );
+
+        // 8. Pause before next iteration.
+        log(`  step 8: pause ${BETWEEN_CODES_MS}ms`);
+        await sleep(BETWEEN_CODES_MS, signal);
+
+        log(`── iteration #${iteration} complete ──`);
       }
     } catch (e) {
-      // ignore
-    }
-    const FALLBACK = ['M', 'B', 'KA', 'F', 'K', 'D', 'S'];
-    return FALLBACK[Math.floor(Math.random() * FALLBACK.length)];
-  }
-
-  function clearIdleTimer() {
-    if (idleTimer) {
-      clearTimeout(idleTimer);
-      idleTimer = null;
-    }
-  }
-
-  function evaluateIdle() {
-    clearIdleTimer();
-
-    const input = document.querySelector<HTMLInputElement>('[data-testid="license-plate-input"]');
-    const inputVal = input?.value ?? '';
-    const mapIsIdle = mapCtx.isIdle();
-
-    if (mapIsIdle && inputVal.trim() === '') {
-      idleTimer = setTimeout(() => {
-        idle = true;
-        console.log('user idle');
-        startIdleSequence();
-      }, IDLE_MS);
-    } else {
-      if (idle) {
-        idle = false;
-        console.log('idle false');
-        stopIdleSequence();
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        log(`runLoop() — AbortError at iteration #${iteration}, clean exit`);
+      } else {
+        err('runLoop() — unexpected error', e);
       }
+    } finally {
+      // Restore whatever was there before we started.
+      input.placeholder = originalPlaceholder;
+      fireIdleEvent(input, '', false);
+      log(`runLoop() — finally: placeholder restored to "${originalPlaceholder}", idle event fired`);
     }
   }
 
-  async function animateDeletion(input: HTMLInputElement, text: string) {
-    for (let i = text.length; i >= 0 && idle; i--) {
-      input.setAttribute('placeholder', text.slice(0, i));
-      await new Promise((r) => (idle ? setTimeout(r, CHAR_INTERVAL) : r()));
+  // ── Start ─────────────────────────────────────────────────────────────────
+
+  function startAnimation() {
+    log(`startAnimation() — loopAbort=${loopAbort ? 'running' : 'null'}`);
+    if (loopAbort) {
+      warn('startAnimation() — already running');
+      return;
     }
+    if (idleStopDebounceTimer) {
+      clearTimeout(idleStopDebounceTimer);
+      idleStopDebounceTimer = null;
+    }
+    loopAbort = new AbortController();
+    runLoop(loopAbort.signal);
   }
 
-  async function animateTyping(input: HTMLInputElement, text: string) {
-    for (let i = 1; i <= text.length && idle; i++) {
-      input.setAttribute('placeholder', text.slice(0, i));
-      await new Promise((r) => (idle ? setTimeout(r, CHAR_INTERVAL) : r()));
-    }
-  }
+  // ── Reactive ──────────────────────────────────────────────────────────────
 
-  async function startIdleSequence() {
-    if (runningSequence) return;
-    runningSequence = true;
+  createEffect(() => {
+    const idle = mapCtx.isIdle();
+    const value = inputValue();
+    log(`createEffect(idle+value) — isIdle=${idle}, inputValue="${value}"`);
 
-    const input = document.querySelector<HTMLInputElement>('[data-testid="license-plate-input"]');
-    if (!input) { runningSequence = false; return; }
-
-    const originalPlaceholder = input.getAttribute('placeholder') ?? '<city code>';
-
-    while (idle) {
-      // fetch a fresh random code each iteration
-      const code = await fetchRandomCode();
-      const upName = (code || '').toUpperCase();
-
-      // 1) Delete default to empty
-      await animateDeletion(input, originalPlaceholder);
-      if (!idle) break;
-
-      // 2) Type first 1..2 chars of the code
-      const two = upName.slice(0, 2);
-      await animateTyping(input, two);
-      if (!idle) break;
-
-      // wait briefly, then delete to 1 then to empty
-      await new Promise((r) => (idle ? setTimeout(r, 500) : r()));
-      await animateDeletion(input, two.slice(0, 1));
-      if (!idle) break;
-      await animateDeletion(input, '');
-      if (!idle) break;
-
-      // 3) Type '<', '<C', '<CO', ... up to a few chars of the code
-      const maxChars = Math.min(5, upName.length);
-      for (let i = 0; i <= maxChars && idle; i++) {
-        const txt = '<' + upName.slice(0, i);
-        input.setAttribute('placeholder', txt);
-        await new Promise((r) => (idle ? setTimeout(r, CHAR_INTERVAL) : r()));
-      }
-      if (!idle) break;
-
-      // 4) Wait, zoom out and pan slightly
-      await new Promise((r) => (idle ? setTimeout(r, BETWEEN_MS) : r()));
-      if (!idle) break;
-      try {
-        mapCtx.flyToCoords([10.0, 51.0], 5);
-        const dx = (Math.random() - 0.5) * 2;
-        const dy = (Math.random() - 0.5) * 2;
-        mapCtx.flyToCoords([10.0 + dx, 51.0 + dy], 5);
-      } catch (e) {
-        // ignore
-      }
-
-      // restore placeholder
-      input.setAttribute('placeholder', originalPlaceholder);
-
-      // small pause
-      await new Promise((r) => (idle ? setTimeout(r, 1000) : r()));
+    // ⚠️ KEY CHANGE: we no longer stop the animation when isIdle goes false.
+    // isIdle bounces false during every flyTo (including ones WE trigger via
+    // the idle lookup). Stopping on isIdle=false was killing the loop every
+    // single cycle. User-driven stops happen via focus/keydown/drag listeners.
+    if (!idle) {
+      // Only start if not already running — don't stop.
+      log('createEffect(idle+value) — not idle, leaving animation state as-is');
+      return;
     }
 
-    runningSequence = false;
-  }
+    // Cancel any pending debounced stop since we're back to idle.
+    if (idleStopDebounceTimer) {
+      clearTimeout(idleStopDebounceTimer);
+      idleStopDebounceTimer = null;
+      log('createEffect(idle+value) — cancelled pending stop, isIdle is true again');
+    }
 
-  function stopIdleSequence() {
-    runningSequence = false;
-  }
+    if (value !== '') {
+      if (loopAbort) stopAnimation('input has value');
+      return;
+    }
+
+    // isIdle=true + empty input: start if not already running.
+    startAnimation();
+  });
+
+  // ── Listeners ─────────────────────────────────────────────────────────────
 
   onMount(() => {
-    const input = document.querySelector('[data-testid="license-plate-input"]');
-    const onInput = (e: Event) => {
-      const t = e.target as HTMLInputElement | null;
-      // ignore programmatic changes if flagged
-      if (t?.dataset?.mkzProgrammatic === '1') return;
+    const input = document.querySelector<HTMLInputElement>(
+      '[data-testid="license-plate-input"]',
+    );
+    if (!input) {
+      err('onMount() — input not found');
+      return;
+    }
 
-      console.log('action: typing');
-      clearIdleTimer();
-      if (idle) {
-        idle = false;
-        console.log('idle false');
+    log(`onMount() — input found, placeholder="${input.placeholder}", value="${input.value}"`);
+    setInputValue(input.value);
+
+    const handleFocus = () => {
+      log('event: focus');
+      stopAnimation('focus');
+    };
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete') {
+        log(`event: keydown "${e.key}"`);
+        stopAnimation(`keydown: ${e.key}`);
       }
-      evaluateIdle();
+    };
+    const handleInputEvent = () => {
+      const val = input.value;
+      log(`event: input value="${val}"`);
+      setInputValue(val);
+      if (val !== '' && loopAbort) stopAnimation('input non-empty');
+    };
+    const handleMapDrag = () => {
+      log('event: dragstart');
+      stopAnimation('map drag');
     };
 
-    if (input) input.addEventListener('input', onInput as EventListener);
-    document.addEventListener('input', onInput as EventListener);
+    input.addEventListener('focus', handleFocus);
+    input.addEventListener('keydown', handleKeydown);
+    input.addEventListener('input', handleInputEvent);
 
-    evaluateIdle();
+    let mapListenerAttached = false;
+    const attachMapListener = (map: maplibregl.Map) => {
+      if (mapListenerAttached) return;
+      map.on('dragstart', handleMapDrag);
+      mapListenerAttached = true;
+      log('onMount() — dragstart attached');
+    };
+
+    const existing = mapCtx.map();
+    if (existing) attachMapListener(existing);
+    createEffect(() => {
+      const m = mapCtx.map();
+      if (m) attachMapListener(m);
+    });
 
     onCleanup(() => {
-      if (input) input.removeEventListener('input', onInput as EventListener);
-      document.removeEventListener('input', onInput as EventListener);
-      clearIdleTimer();
+      input.removeEventListener('focus', handleFocus);
+      input.removeEventListener('keydown', handleKeydown);
+      input.removeEventListener('input', handleInputEvent);
+      mapCtx.map()?.off('dragstart', handleMapDrag);
+      if (idleStopDebounceTimer) clearTimeout(idleStopDebounceTimer);
+      loopAbort?.abort();
+      loopAbort = null;
     });
   });
 
-  createEffect(() => {
-    mapCtx.isIdle();
-    evaluateIdle();
-  });
-
   return null;
-};
-
-export default IdleController;
+}

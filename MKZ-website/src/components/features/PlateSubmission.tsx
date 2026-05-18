@@ -1,4 +1,4 @@
-import { Component, Show, createSignal, createEffect, createMemo, onCleanup } from 'solid-js';
+import { Component, Show, createSignal, createEffect, createMemo, onCleanup, onMount } from 'solid-js';
 import LicensePlate from '../common/LicensePlate';
 import Button from '../common/Button';
 import LoginNudge from '../common/LoginNudge';
@@ -17,6 +17,7 @@ import {
 import { user } from '~/store/auth';
 import { BUNDESLAND_COORDS, BUNDESLAND_ZOOM } from '~/data/bundeslandCoords';
 import RegionCallout, { type RegionData } from './RegionCallout';
+import { IDLE_CODE_EVENT, type IdlePlateCodeEvent } from '~/components/features/IdleController';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -89,6 +90,7 @@ const PlateSubmission: Component = () => {
   // ── Debounced lookup (handles both input value and placeholder changes) ──────────────────────────────────────────────────────
 
   let lookupTimer: ReturnType<typeof setTimeout> | null = null;
+
   async function performLookup(text: string) {
     const prefix = extractPlatePrefix(text);
     if (!prefix) {
@@ -138,7 +140,10 @@ const PlateSubmission: Component = () => {
       scheduleLookupFor(raw);
     } else {
       // Input was cleared by user — clear shown region and cancel pending lookup
-      if (lookupTimer) { clearTimeout(lookupTimer); lookupTimer = null; }
+      if (lookupTimer) {
+        clearTimeout(lookupTimer);
+        lookupTimer = null;
+      }
       setKennzeichen(null);
       setSeenRecord(null);
       setLastCheckedPrefix('');
@@ -146,36 +151,46 @@ const PlateSubmission: Component = () => {
     }
   });
 
-  const DEFAULT_PLACEHOLDER = '<city code>';
-  // Observe placeholder changes on the input element when the input value is empty
-  createEffect(() => {
-    // run once on mount to set up observer
-    const input = document.querySelector<HTMLInputElement>('[data-testid="license-plate-input"]');
+  const DEFAULT_PLACEHOLDER = 'Suche hier …';
+
+// Remove the entire MutationObserver createEffect block:
+//   createEffect(() => {
+//     const input = document.querySelector(...)
+//     const observer = new MutationObserver(...)   ← DELETE ALL OF THIS
+//     observer.observe(...)
+//     onCleanup(() => observer.disconnect())
+//   })
+
+// Replace it with this single onMount listener:
+
+  onMount(() => {
+    const input = document.querySelector<HTMLInputElement>(
+      '[data-testid="license-plate-input"]',
+    );
     if (!input) return;
 
-    let lastWasDefault = false;
+    const handleIdleCode = (e: Event) => {
+      const { code, active } = (e as IdlePlateCodeEvent).detail;
+      console.log('[PlateSubmission] idle:plate-code — code="' + code + '", active=' + active);
 
-    const observer = new MutationObserver(() => {
-      // only consider placeholder when the actual input is empty
-      if ((input.value ?? '').trim() === '') {
-        const ph = (input.getAttribute('placeholder') ?? '').trim();
-        if (ph) scheduleLookupFor(ph);
-
-        // If placeholder is the default, fly to default center/zoom once
-        const isDefault = ph === DEFAULT_PLACEHOLDER;
-        if (isDefault && !lastWasDefault) {
-          lastWasDefault = true;
-          // fly to Germany default
-          mapCtx.flyToCoords([10.0, 51.0], 5);
-        } else if (!isDefault) {
-          lastWasDefault = false;
-        }
+      if (!active || code === '') {
+        if (lookupTimer) { clearTimeout(lookupTimer); lookupTimer = null; }
+        setKennzeichen(null);
+        setSeenRecord(null);
+        setLastCheckedPrefix('');
+        setLastCheckedText('');
+        // ⚠️ REMOVED: mapCtx.flyToCoords([10.0, 51.0], 5)
+        // Don't drive the map from here — the map context owns its position.
+        // Flying to Germany here was causing isIdle to bounce, which killed
+        // the animation. Let the map context settle on its own.
+        return;
       }
-    });
 
-    observer.observe(input, { attributes: true, attributeFilter: ['placeholder'] });
+      scheduleLookupFor(code);
+    };
 
-    onCleanup(() => observer.disconnect());
+    input.addEventListener(IDLE_CODE_EVENT, handleIdleCode);
+    onCleanup(() => input.removeEventListener(IDLE_CODE_EVENT, handleIdleCode));
   });
 
 
@@ -307,7 +322,7 @@ const PlateSubmission: Component = () => {
       {/* Region callout — above the form on larger screens */}
       <Show when={regionCalloutData()}>
         <div class="md:col-span-2 lg:col-start-2 lg:col-span-1">
-          <RegionCallout region={regionCalloutData()} />
+          <RegionCallout region={regionCalloutData()}/>
         </div>
       </Show>
 
@@ -322,7 +337,11 @@ const PlateSubmission: Component = () => {
             <LicensePlate
               text={plateText()}
               editable
-              onInput={(v) => { setPlateText(v); setSubmitError(null); setSubmitSuccess(false); }}
+              onInput={(v) => {
+                setPlateText(v);
+                setSubmitError(null);
+                setSubmitSuccess(false);
+              }}
               size="lg"
               placeholder={DEFAULT_PLACEHOLDER}
             />
@@ -334,11 +353,12 @@ const PlateSubmission: Component = () => {
               class="flex items-start gap-3 bg-blue-50/80 rounded-lg px-4 py-3 border border-blue-100/60"
               data-testid="region-info"
             >
-              <svg class="w-5 h-5 text-mkz-primary shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-5 h-5 text-mkz-primary shrink-0 mt-0.5" fill="none" stroke="currentColor"
+                   viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
               </svg>
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-gray-800 truncate">{kennzeichen()!.district_name}</p>
@@ -368,7 +388,7 @@ const PlateSubmission: Component = () => {
             {/* ── Not logged in ── */}
             <Show when={!user()}>
               <div data-testid="sign-in-to-collect">
-                <LoginNudge />
+                <LoginNudge/>
               </div>
             </Show>
 
@@ -381,10 +401,11 @@ const PlateSubmission: Component = () => {
                 <Show
                   when={pendingImageUrl()}
                   fallback={
-                    <label class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm text-gray-600 w-fit">
+                    <label
+                      class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm text-gray-600 w-fit">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                       </svg>
                       Add proof photo (optional)
                       <input
@@ -441,16 +462,19 @@ const PlateSubmission: Component = () => {
                         {pickMsg(NO_PHOTO_MSGS, plateText())}
                       </p>
                       <p class="text-xs text-amber-600 mt-1">
-                        Logged <span class="font-mono">{seenRecord()!.plate_text}</span> — upload evidence to seal the deal.
+                        Logged <span class="font-mono">{seenRecord()!.plate_text}</span> — upload evidence to seal the
+                        deal.
                       </p>
                     </div>
 
                     <div class="flex items-center gap-3 flex-wrap">
-                      <label class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-mkz-primary text-white text-sm font-medium hover:bg-mkz-secondary transition-colors">
+                      <label
+                        class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-mkz-primary text-white text-sm font-medium hover:bg-mkz-secondary transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
                         </svg>
                         {submitting() ? 'Uploading…' : 'Add photo'}
                         <input
@@ -495,10 +519,11 @@ const PlateSubmission: Component = () => {
                         data-testid="seen-photo"
                       />
                       <div class="flex flex-col gap-2">
-                        <label class="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm text-gray-600 transition-colors">
+                        <label
+                          class="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm text-gray-600 transition-colors">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                           </svg>
                           {submitting() ? 'Updating…' : 'Change photo'}
                           <input
@@ -520,7 +545,7 @@ const PlateSubmission: Component = () => {
                         >
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                           </svg>
                           Remove photo
                         </button>
@@ -547,7 +572,9 @@ const PlateSubmission: Component = () => {
             <Show when={submitSuccess()}>
               <span class="text-sm text-green-600 flex items-center gap-1" data-testid="submission-success">
                 <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  <path fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clip-rule="evenodd"/>
                 </svg>
                 Added to your collection!
               </span>
@@ -556,7 +583,9 @@ const PlateSubmission: Component = () => {
             <Show when={submitError()}>
               <span class="text-sm text-red-600 flex items-center gap-1" data-testid="submission-error">
                 <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                  <path fill-rule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clip-rule="evenodd"/>
                 </svg>
                 {submitError()}
               </span>
@@ -575,16 +604,16 @@ const PlateSubmission: Component = () => {
       >
         {/* Viewfinder corners */}
         <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
-          <div class="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-white/70 rounded-tl" />
-          <div class="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-white/70 rounded-tr" />
-          <div class="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-white/70 rounded-bl" />
-          <div class="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-white/70 rounded-br" />
+          <div class="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-white/70 rounded-tl"/>
+          <div class="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-white/70 rounded-tr"/>
+          <div class="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-white/70 rounded-bl"/>
+          <div class="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-white/70 rounded-br"/>
         </div>
 
         {/* Spinner */}
         <Show when={lookupLoading()}>
           <div class="absolute inset-0 flex items-center justify-center">
-            <div class="w-6 h-6 border-2 border-white/40 border-t-white/80 rounded-full animate-spin" />
+            <div class="w-6 h-6 border-2 border-white/40 border-t-white/80 rounded-full animate-spin"/>
           </div>
         </Show>
 
@@ -593,12 +622,12 @@ const PlateSubmission: Component = () => {
           <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4">
             <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
             <p class="text-white/50 text-xs text-center leading-relaxed">
-              Type a plate<br />to see the region
+              Type a plate<br/>to see the region
             </p>
           </div>
         </Show>
@@ -612,8 +641,8 @@ const PlateSubmission: Component = () => {
             >
               <svg class="w-3.5 h-3.5 text-mkz-accent" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd"
-                  d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                  clip-rule="evenodd" />
+                      d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                      clip-rule="evenodd"/>
               </svg>
               {kennzeichen()!.district_name}
             </span>

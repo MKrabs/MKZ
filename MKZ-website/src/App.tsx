@@ -2,7 +2,7 @@ import { Component } from 'solid-js';
 import TitleBar from './components/layout/TitleBar';
 import PlateSubmission from './components/features/PlateSubmission';
 import ChallengesGrid from './components/features/ChallengesGrid';
-import IdleController from './components/features/IdleController';
+import { IdleController } from './components/features/IdleController';
 import { GlobeMap, RegionMarkers } from './components/map';
 
 const App: Component = () => {
