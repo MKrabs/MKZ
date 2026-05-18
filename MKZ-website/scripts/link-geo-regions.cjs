@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 // MKZ-website/scripts/link-geo-regions.cjs
-
 'use strict';
 
 const fs   = require('fs');
@@ -28,11 +27,8 @@ if (!email || !pass) {
 }
 
 // ─── Manual overrides ────────────────────────────────────────────────────────
-// code → string[]   exact geo_regions.gen values to link (one junction per entry)
-// code → []         intentionally no geo_region (true city-states only)
 
 const MANUAL_OVERRIDES = {
-  // ── Stadt + Landkreis pairs ───────────────────────────────────────────────
   'A':   ['Augsburg', 'Augsburg, Landkreis'],
   'AB':  ['Aschaffenburg', 'Aschaffenburg, Landkreis'],
   'AN':  ['Ansbach', 'Ansbach, Landkreis'],
@@ -54,8 +50,6 @@ const MANUAL_OVERRIDES = {
   'RO':  ['Rosenheim', 'Rosenheim, Landkreis'],
   'SW':  ['Schweinfurt', 'Schweinfurt, Landkreis'],
   'WÜ':  ['Würzburg', 'Würzburg, Landkreis'],
-
-  // ── Single region (collision resolution or name mismatch) ────────────────
   'AC':  ['Städteregion Aachen'],
   'BR':  ['Karlsruhe, Landkreis'],
   'BRB': ['Brandenburg an der Havel'],
@@ -81,16 +75,12 @@ const MANUAL_OVERRIDES = {
   'VOH': ['Neustadt a.d.Waldnaab'],
   'WEN': ['Weiden i.d.OPf.'],
   'WUN': ['Wunsiedel i.Fichtelgebirge'],
-
-  // ── kreisangehörige Städte (belong to a Landkreis) ────────────────────────
   'HGW': ['Vorpommern-Greifswald'],
   'HST': ['Vorpommern-Rügen'],
   'HWI': ['Nordwestmecklenburg'],
   'IGB': ['Saarpfalz-Kreis'],
   'NB':  ['Mecklenburgische Seenplatte'],
   'NEC': ['Coburg', 'Coburg, Landkreis'],
-
-  // ── Multi-district codes ──────────────────────────────────────────────────
   'AIB': ['München, Landkreis', 'Rosenheim, Landkreis'],
   'BH':  ['Ortenaukreis', 'Rastatt'],
   'BK':  ['Rems-Murr-Kreis', 'Schwäbisch Hall'],
@@ -133,9 +123,9 @@ const MANUAL_OVERRIDES = {
   'WS':  ['Mühldorf a.Inn', 'Rosenheim, Landkreis'],
   'ZW':  ['Zweibrücken', 'Südwestpfalz'],
   'ÜB':  ['Bodenseekreis', 'Ravensburg', 'Sigmaringen'],
-  'HH':  ['Hamburg'],                  // Freie und Hansestadt Hamburg — single city-state geo entry
-  'HB':  ['Bremen', 'Bremerhaven'],    // Stadt Bremen + Stadt Bremerhaven (X-9999 range)
-  'HL':  ['Lübeck'],                   // Stadt Lübeck — kreisfreie Stadt, has geo entry
+  'HH':  ['Hamburg'],
+  'HB':  ['Bremen', 'Bremerhaven'],
+  'HL':  ['Lübeck'],
 };
 
 // ─── Normalize ────────────────────────────────────────────────────────────────
@@ -204,7 +194,6 @@ async function fetchAllRecords(token, collection, fields) {
   const geoRegions = await fetchAllRecords(token, 'geo_regions', 'id,ags,gen');
   console.log(`  ${geoRegions.length} records`);
 
-  // Build lookup maps.
   const geoByGen     = new Map();
   const geoByNorm    = new Map();
   const normConflict = new Set();
@@ -216,16 +205,13 @@ async function fetchAllRecords(token, collection, fields) {
     geoByNorm.set(norm, geo);
   }
 
-  // ── Resolve each kennzeichen to 0..N geo_region IDs ──────────────────────
-
-  const junctions = []; // { kzId, kzCode, kzName, geoId, geoGen, geoAgs, via }
-  const skipped   = []; // intentionally empty []
-  const unmatched = []; // no resolution found
+  const junctions = [];
+  const skipped   = [];
+  const unmatched = [];
 
   for (const kz of kennzeichen) {
     const code = kz.code;
 
-    // Layer 1: manual override
     if (code in MANUAL_OVERRIDES) {
       const gens = MANUAL_OVERRIDES[code];
       if (gens.length === 0) {
@@ -243,14 +229,12 @@ async function fetchAllRecords(token, collection, fields) {
       continue;
     }
 
-    // Layer 2: exact match on district_name
     const exactGeo = geoByGen.get(kz.district_name);
     if (exactGeo) {
       junctions.push({ kzId: kz.id, kzCode: code, kzName: kz.district_name, geoId: exactGeo.id, geoGen: exactGeo.gen, geoAgs: exactGeo.ags, via: 'exact' });
       continue;
     }
 
-    // Layer 3: normalized match (no collision)
     const norm = normalize(kz.district_name);
     if (!normConflict.has(norm) && geoByNorm.has(norm)) {
       const geo = geoByNorm.get(norm);
@@ -258,7 +242,6 @@ async function fetchAllRecords(token, collection, fields) {
       continue;
     }
 
-    // Layer 4: first token before " / "
     if (kz.district_name.includes(' / ')) {
       const firstPart = kz.district_name.split(' / ')[0].trim();
       const firstNorm = normalize(firstPart);
@@ -271,8 +254,6 @@ async function fetchAllRecords(token, collection, fields) {
 
     unmatched.push({ kzId: kz.id, kzCode: code, kzName: kz.district_name, norm });
   }
-
-  // ── Report ────────────────────────────────────────────────────────────────
 
   const coveredKz = new Set(junctions.map(j => j.kzId)).size;
   console.log(`\n📊 Results:`);
@@ -300,7 +281,6 @@ async function fetchAllRecords(token, collection, fields) {
   }
 
   if (isDry) {
-    // Show multi-region codes
     const byCode = {};
     for (const j of junctions) {
       if (!byCode[j.kzCode]) byCode[j.kzCode] = [];
@@ -325,12 +305,12 @@ async function fetchAllRecords(token, collection, fields) {
     if (match) packageName = match[1];
   }
 
+  // ── KEY FIX: emit [code, gen] pairs — NOT [kzId, geoId] ──────────────────
+  // Database IDs are auto-generated per instance and differ between
+  // local dev and production. kennzeichen.code and geo_regions.gen are
+  // stable unique business keys that are identical on every instance.
   const insertLines = junctions.map(j =>
-    `\t\t{"${j.kzId}", "${j.geoId}"}, // ${j.kzCode} → ${j.geoGen} (${j.geoAgs}) [${j.via}]`
-  ).join('\n');
-
-  const deleteLines = junctions.map(j =>
-    `\t\t"${j.kzId}", // ${j.kzCode}`
+    `\t\t{"${j.kzCode}", "${j.geoGen}"}, // ${j.geoAgs} [${j.via}]`
   ).join('\n');
 
   const migration = `package ${packageName}
@@ -341,6 +321,8 @@ import (
 )
 
 // Populates kennzeichen_geo_regions junction table.
+// Uses stable business keys (kennzeichen.code, geo_regions.gen) instead
+// of hardcoded database IDs — works on any db instance.
 // Generated by link-geo-regions.cjs
 //   Junction records:      ${junctions.length}
 //   Kennzeichen covered:   ${coveredKz} / ${kennzeichen.length}
@@ -352,14 +334,41 @@ func init() {
 \t\t\treturn err
 \t\t}
 
+\t\t// [kennzeichen.code, geo_regions.gen] — stable across all db instances
 \t\tlinks := [][2]string{
 ${insertLines}
 \t\t}
 
 \t\tfor _, link := range links {
+\t\t\tkzCode, geoGen := link[0], link[1]
+
+\t\t\tkz, err := app.FindFirstRecordByFilter(
+\t\t\t\t"kennzeichen", "code = {:code}", map[string]any{"code": kzCode},
+\t\t\t)
+\t\t\tif err != nil {
+\t\t\t\tcontinue // code not in this db instance, skip
+\t\t\t}
+
+\t\t\tgeo, err := app.FindFirstRecordByFilter(
+\t\t\t\t"geo_regions", "gen = {:gen}", map[string]any{"gen": geoGen},
+\t\t\t)
+\t\t\tif err != nil {
+\t\t\t\tcontinue // geo not in this db instance, skip
+\t\t\t}
+
+\t\t\t// Idempotent — skip if already linked
+\t\t\texisting, _ := app.FindFirstRecordByFilter(
+\t\t\t\t"kennzeichen_geo_regions",
+\t\t\t\t"kennzeichen = {:kz} && geo_region = {:geo}",
+\t\t\t\tmap[string]any{"kz": kz.Id, "geo": geo.Id},
+\t\t\t)
+\t\t\tif existing != nil {
+\t\t\t\tcontinue
+\t\t\t}
+
 \t\t\trec := core.NewRecord(collection)
-\t\t\trec.Set("kennzeichen", link[0])
-\t\t\trec.Set("geo_region", link[1])
+\t\t\trec.Set("kennzeichen", kz.Id)
+\t\t\trec.Set("geo_region", geo.Id)
 \t\t\tif err := app.Save(rec); err != nil {
 \t\t\t\treturn err
 \t\t\t}
