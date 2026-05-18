@@ -1,4 +1,4 @@
-import { Component, onMount, onCleanup } from 'solid-js';
+import { Component, onMount, onCleanup, createEffect } from 'solid-js';
 import { useMap } from '../map/MapContext';
 import { extractPlatePrefix } from '~/data/plateRegions';
 
@@ -153,32 +153,47 @@ const IdleController: Component = () => {
     if (funFactInterval) { clearInterval(funFactInterval); funFactInterval = null; }
   }
 
-  onMount(() => {
-    // Attach listeners
-    const input = document.querySelector('[data-testid="license-plate-input"]');
-    const onInput = () => onUserAction('typing');
-    if (input) input.addEventListener('input', onInput as EventListener);
+  let inputEl: HTMLElement | null = null;
 
-    const m = mapCtx.map();
-    const handlers: Array<{ event: string; cb: any }> = [];
-    if (m && typeof m.on === 'function') {
+  onMount(() => {
+    // Attach typing listener
+    inputEl = document.querySelector('[data-testid="license-plate-input"]');
+    const onInput = () => onUserAction('typing');
+    if (inputEl) inputEl.addEventListener('input', onInput as EventListener);
+
+    // Attach map drag listeners if map instance is available
+    const mapInstance = mapCtx.map();
+    const mapHandlers: Array<{ event: string; cb: Function }> = [];
+    if (mapInstance && typeof mapInstance.on === 'function') {
       const dragStartCb = () => onUserAction('dragging');
       const dragEndCb = () => scheduleIdle();
-      m.on('dragstart', dragStartCb);
-      m.on('dragend', dragEndCb);
-      handlers.push({ event: 'dragstart', cb: dragStartCb }, { event: 'dragend', cb: dragEndCb });
+      mapInstance.on('dragstart', dragStartCb);
+      mapInstance.on('dragend', dragEndCb);
+      mapHandlers.push({ event: 'dragstart', cb: dragStartCb }, { event: 'dragend', cb: dragEndCb });
     }
 
     // initial schedule
     scheduleIdle();
 
     onCleanup(() => {
-      if (input) input.removeEventListener('input', onInput as EventListener);
-      if (m && typeof m.off === 'function') {
-        handlers.forEach(h => m.off(h.event, h.cb));
+      if (inputEl) inputEl.removeEventListener('input', onInput as EventListener);
+      if (mapInstance && typeof mapInstance.off === 'function') {
+        mapHandlers.forEach(h => mapInstance.off(h.event, h.cb));
       }
       clearAllTimers();
     });
+  });
+
+  // React to map idle state from MapContext
+  createEffect(() => {
+    const mapIdle = mapCtx.isIdle();
+    if (mapIdle) {
+      // Map is idle: schedule overall idle check
+      scheduleIdle();
+    } else {
+      // Map is active/dragging: cancel idle activities
+      cancelIdle();
+    }
   });
 
   return null;
