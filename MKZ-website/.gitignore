@@ -1,3 +1,6 @@
 node_modules/
 dist/
 .vite/
+
+# Large generated data (regenerate with: node scripts/fetch-region-outlines.cjs)
+src/data/region-outlines-high.json
