@@ -86,60 +86,85 @@ const PlateSubmission: Component = () => {
     return [r.left + r.width / 2 - window.innerWidth / 2, r.top + r.height / 2 - window.innerHeight / 2];
   }
 
-  // ── Debounced lookup ──────────────────────────────────────────────────────
+  // ── Debounced lookup (handles both input value and placeholder changes) ──────────────────────────────────────────────────────
 
-  createEffect(() => {
-    const raw = plateText();
-    const text = raw.trim().toUpperCase();
+  let lookupTimer: ReturnType<typeof setTimeout> | null = null;
+  async function performLookup(text: string) {
     const prefix = extractPlatePrefix(text);
+    if (!prefix) {
+      setKennzeichen(null);
+      setSeenRecord(null);
+      setLastCheckedPrefix('');
+      setLastCheckedText('');
+      return;
+    }
 
     const prefixChanged = prefix !== lastCheckedPrefix();
-    const textChanged = text !== lastCheckedText();
 
-    // Nothing useful changed
-    if (!prefixChanged && !textChanged) return;
+    setLastCheckedPrefix(prefix);
+    setLastCheckedText(text);
+    setLookupLoading(true);
 
-    const timer = setTimeout(async () => {
-      if (!prefix) {
-        setKennzeichen(null);
-        setSeenRecord(null);
-        setLastCheckedPrefix('');
-        setLastCheckedText('');
-        return;
-      }
+    try {
+      const [kz, seen] = await Promise.all([
+        prefixChanged ? lookupCode(prefix) : Promise.resolve(kennzeichen()),
+        user() ? checkSeen(user()!.id, text) : Promise.resolve(null),
+      ]);
 
-      setLastCheckedPrefix(prefix);
-      setLastCheckedText(text);
-      setLookupLoading(true);
-
-      try {
-        // Run kz lookup (dedup by prefix) and seen check (always by full text) in parallel
-        const [kz, seen] = await Promise.all([
-          prefixChanged
-            ? lookupCode(prefix)
-            : Promise.resolve(kennzeichen()),
-          user()
-            ? checkSeen(user()!.id, text)
-            : Promise.resolve(null),
-        ]);
-
-        if (prefixChanged) {
-          setKennzeichen(kz);
-          if (kz) {
-            const coords = BUNDESLAND_COORDS[kz.bundesland_iso];
-            if (coords) mapCtx.flyToCoords(coords, BUNDESLAND_ZOOM, computePreviewOffset());
-          }
+      if (prefixChanged) {
+        setKennzeichen(kz);
+        if (kz) {
+          const coords = BUNDESLAND_COORDS[kz.bundesland_iso];
+          if (coords) mapCtx.flyToCoords(coords, BUNDESLAND_ZOOM, computePreviewOffset());
         }
-
-        // Only show seen status when the region is recognised
-        setSeenRecord(kz ? seen : null);
-      } finally {
-        setLookupLoading(false);
       }
-    }, LOOKUP_DEBOUNCE);
 
-    onCleanup(() => clearTimeout(timer));
+      setSeenRecord(kz ? seen : null);
+    } finally {
+      setLookupLoading(false);
+    }
+  }
+
+  function scheduleLookupFor(rawText: string) {
+    if (lookupTimer) clearTimeout(lookupTimer);
+    const text = rawText.trim().toUpperCase();
+    lookupTimer = setTimeout(() => void performLookup(text), LOOKUP_DEBOUNCE);
+  }
+
+  // React to actual input value changes
+  createEffect(() => {
+    const raw = plateText();
+    if (raw.trim() !== '') {
+      scheduleLookupFor(raw);
+    } else {
+      // Input was cleared by user — clear shown region and cancel pending lookup
+      if (lookupTimer) { clearTimeout(lookupTimer); lookupTimer = null; }
+      setKennzeichen(null);
+      setSeenRecord(null);
+      setLastCheckedPrefix('');
+      setLastCheckedText('');
+    }
   });
+
+  // Observe placeholder changes on the input element when the input value is empty
+  createEffect(() => {
+    // run once on mount to set up observer
+    const input = document.querySelector<HTMLInputElement>('[data-testid="license-plate-input"]');
+    if (!input) return;
+
+    const observer = new MutationObserver(() => {
+      // only consider placeholder when the actual input is empty
+      if ((input.value ?? '').trim() === '') {
+        const ph = (input.getAttribute('placeholder') ?? '').trim();
+        if (ph) scheduleLookupFor(ph);
+      }
+    });
+
+    observer.observe(input, { attributes: true, attributeFilter: ['placeholder'] });
+
+    onCleanup(() => observer.disconnect());
+  });
+
 
   // ── Create new entry ──────────────────────────────────────────────────────
 
