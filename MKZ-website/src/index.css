@@ -55,3 +55,50 @@
   opacity: 0;
   animation: appear-after-draw 0.12s ease 1.3s forwards;
 }
+
+/* ── Region Markers: plate signs on the map ───────────────────────────────── */
+.region-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  transform-origin: bottom center;
+}
+
+.region-marker.marker-raised {
+  transform: translateY(-6px) scale(1.15);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+  z-index: 10;
+}
+
+.marker-plate-sign {
+  background: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 3px;
+  padding: 2px 5px;
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.marker-plate-sign::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background: #003399;
+  border-radius: 1px 0 0 1px;
+}
+
+.marker-stick {
+  width: 2px;
+  height: 12px;
+  background: #555;
+  border-radius: 0 0 1px 1px;
+}
