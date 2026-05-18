@@ -75,29 +75,14 @@ describe('IdleController — simplified behavior', () => {
     input.remove();
   });
 
-  it('logs dragging action and then user idle after timeout', async () => {
-    const mapMock = makeMapMock();
-    renderWithMap(mapMock);
+  // removed dragging test — controller no longer listens to map drag events
 
-    // simulate dragstart
-    mapMock._emit('dragstart');
-    expect(console.log).toHaveBeenCalledWith('action: dragging');
-
-    // simulate dragend
-    mapMock._emit('dragend');
-
-    // advance past idle
-    await vi.advanceTimersByTimeAsync(5000);
-    expect(console.log).toHaveBeenCalledWith('user idle');
-  });
-
-  it('multiple actions reset the idle timer', async () => {
-    const mapMock = makeMapMock();
+  it('multiple typing actions reset the idle timer', async () => {
     const input = document.createElement('input');
     input.setAttribute('data-testid', 'license-plate-input');
     document.body.appendChild(input);
 
-    renderWithMap(mapMock);
+    renderWithMap();
 
     // typing
     input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -105,9 +90,9 @@ describe('IdleController — simplified behavior', () => {
 
     await vi.advanceTimersByTimeAsync(3000);
 
-    // dragging happens before idle fires
-    mapMock._emit('dragstart');
-    expect(console.log).toHaveBeenCalledWith('action: dragging');
+    // another typing happens before idle fires
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(console.log).toHaveBeenCalledWith('action: typing');
 
     // advance 5s from last action
     await vi.advanceTimersByTimeAsync(5000);

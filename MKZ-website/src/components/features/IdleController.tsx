@@ -9,7 +9,7 @@ import { extractPlatePrefix } from '~/data/plateRegions';
  * - When idle and input non-empty: cycles fun facts shown in the DOM element
  *   data-testid="fun-fact" (placeholder facts used when none exist).
  *
- * User interactions (typing or dragging) interrupt the idle behavior.
+ * User interactions (typing) interrupt the idle behavior.
  */
 
 const IDLE_MS = 5000;
@@ -53,7 +53,7 @@ const IdleController: Component = () => {
     stopFunFactCycle();
   }
 
-  function onUserAction(action: 'typing' | 'dragging') {
+  function onUserAction(action: 'typing') {
     console.log(`action: ${action}`);
     // any action resets idle
     cancelIdle();
@@ -161,40 +161,17 @@ const IdleController: Component = () => {
     const onInput = () => onUserAction('typing');
     if (inputEl) inputEl.addEventListener('input', onInput as EventListener);
 
-    // Attach map drag listeners if map instance is available
-    const mapInstance = mapCtx.map();
-    const mapHandlers: Array<{ event: string; cb: Function }> = [];
-    if (mapInstance && typeof mapInstance.on === 'function') {
-      const dragStartCb = () => onUserAction('dragging');
-      const dragEndCb = () => scheduleIdle();
-      mapInstance.on('dragstart', dragStartCb);
-      mapInstance.on('dragend', dragEndCb);
-      mapHandlers.push({ event: 'dragstart', cb: dragStartCb }, { event: 'dragend', cb: dragEndCb });
-    }
-
     // initial schedule
     scheduleIdle();
 
     onCleanup(() => {
       if (inputEl) inputEl.removeEventListener('input', onInput as EventListener);
-      if (mapInstance && typeof mapInstance.off === 'function') {
-        mapHandlers.forEach(h => mapInstance.off(h.event, h.cb));
-      }
       clearAllTimers();
     });
   });
 
   // React to map idle state from MapContext
-  createEffect(() => {
-    const mapIdle = mapCtx.isIdle();
-    if (mapIdle) {
-      // Map is idle: schedule overall idle check
-      scheduleIdle();
-    } else {
-      // Map is active/dragging: cancel idle activities
-      cancelIdle();
-    }
-  });
+  createEffect(() => mapCtx.isIdle() ? scheduleIdle() : cancelIdle());
 
   return null;
 };
