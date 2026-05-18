@@ -59,24 +59,19 @@ const IdleController: Component = () => {
       const input = document.querySelector<HTMLInputElement>('[data-testid="license-plate-input"]');
       if (!input) break;
 
-      // mark programmatic so our listener ignores
-      input.dataset.mkzProgrammatic = '1';
-
-      // type into input character by character and dispatch input events so other components respond
+      // type into placeholder character by character (does not fire input events)
+      const originalPlaceholder = input.getAttribute('placeholder') ?? '';
       for (let i = 1; i <= code.length && idle; i++) {
-        input.value = code.slice(0, i);
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        await new Promise((r) => (idle ? setTimeout(r, 200) : r()));
+        input.setAttribute('placeholder', code.slice(0, i));
+        await new Promise<void>((r) => (idle ? setTimeout(r, 200) : r()));
       }
 
-      // unmark programmatic after a tiny delay
-      setTimeout(() => {
-        if (input) delete input.dataset.mkzProgrammatic;
-      }, 50);
-
       // wait BEFORE zoom/pan
-      await new Promise((r) => (idle ? setTimeout(r, BETWEEN_MS) : r()));
-      if (!idle) break;
+      await new Promise<void>((r) => (idle ? setTimeout(r, BETWEEN_MS) : r()));
+      if (!idle) {
+        input.setAttribute('placeholder', originalPlaceholder);
+        break;
+      }
 
       // zoom out to Germany view then pan a bit
       try {
@@ -88,16 +83,11 @@ const IdleController: Component = () => {
         // ignore
       }
 
-      // clear input without triggering user-action
-      if (input) {
-        input.dataset.mkzProgrammatic = '1';
-        input.value = '';
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        setTimeout(() => delete input.dataset.mkzProgrammatic, 50);
-      }
+      // clear placeholder
+      input.setAttribute('placeholder', originalPlaceholder);
 
       // wait a short interval before next code
-      await new Promise((r) => (idle ? setTimeout(r, 1000) : r()));
+      await new Promise<void>((r) => (idle ? setTimeout(r, 1000) : r()));
     }
     runningSequence = false;
   }
