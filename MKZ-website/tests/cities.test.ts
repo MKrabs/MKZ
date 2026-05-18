@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CITIES } from '../src/data/cities';
+import { CITIES } from '~/data/cities';
 
 describe('cities data', () => {
   it('has Berlin with correct coords', () => {

@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@solidjs/testing-library';
-import { MapContext, type MapContextValue } from '../src/components/map/MapContext';
+import { MapContext, type MapContextValue } from '~/components/map';
 
 // ─── PB + auth mocks ──────────────────────────────────────────────────────────
 vi.mock('../src/lib/pb', () => ({

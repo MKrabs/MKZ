@@ -26,7 +26,7 @@ vi.mock('maplibre-gl', () => {
 vi.mock('maplibre-gl/dist/maplibre-gl.css', () => ({}));
 
 import GlobeMap from '../src/components/map/GlobeMap';
-import { useMap } from '../src/components/map/MapContext';
+import { useMap } from '~/components/map';
 
 async function getMock() {
   const mod = (await import('maplibre-gl')).default as any;

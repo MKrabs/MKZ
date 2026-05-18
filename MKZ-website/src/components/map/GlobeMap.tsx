@@ -14,7 +14,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { MapContext, type MapContextValue } from './MapContext';
-import { CITIES } from '../../data/cities';
+import { CITIES } from '~/data/cities';
 
 // ─── Map style ────────────────────────────────────────────────────────────────
 

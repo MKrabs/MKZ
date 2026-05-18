@@ -8,7 +8,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@solidjs/testing-library';
-import { MapContext, type MapContextValue } from '../src/components/map/MapContext';
+import { MapContext, type MapContextValue } from '~/components/map';
 
 // ─── PB mock ────────────────────────────────────────────────────────────────
 const _colMocks: Record<string, any> = {};

@@ -1,5 +1,5 @@
 import { Component, createSignal, Show } from 'solid-js';
-import { login, register } from '../../store/auth';
+import { login, register } from '~/store/auth';
 
 interface AuthModalProps {
   onClose: () => void;

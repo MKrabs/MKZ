@@ -1,6 +1,6 @@
 import { Component, createEffect, onCleanup } from 'solid-js';
 import { useMap } from './MapContext';
-import { getRegionOutlineByName } from '../../data/regionOutlines';
+import { getRegionOutlineByName } from '~/data/regionOutlines';
 import type { RegionData } from '../features/RegionCallout';
 
 interface Props {

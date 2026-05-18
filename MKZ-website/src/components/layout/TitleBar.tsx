@@ -1,8 +1,8 @@
 import { Component, createSignal, Show } from 'solid-js';
-import { idleEnabled, setIdleEnabled } from '../../store/idle';
+import { idleEnabled, setIdleEnabled } from '~/store/idle';
 import ProfileAvatar from '../common/ProfileAvatar';
 import { AuthModal } from '../auth';
-import { user, logout } from '../../store/auth';
+import { user, logout } from '~/store/auth';
 
 const TitleBar: Component = () => {
   const [menuOpen, setMenuOpen] = createSignal(false);

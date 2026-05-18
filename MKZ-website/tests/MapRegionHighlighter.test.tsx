@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@solidjs/testing-library';
-import { MapContext, type MapContextValue } from '../src/components/map/MapContext';
+import { MapContext, type MapContextValue } from '~/components/map';
 
 vi.mock('../src/data/region-outlines-low.json', () => ({
   default: {

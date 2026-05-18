@@ -10,8 +10,8 @@
 import { Component, For, createSignal, onMount, onCleanup, createEffect } from 'solid-js';
 import { useMap } from './MapContext';
 import { RegionMarkersContext, type PlateMarkerData, type RegionMarkersContextValue } from './RegionMarkersContext';
-import { extractPlatePrefix } from '../../data/plateRegions';
-import { BUNDESLAND_COORDS, BUNDESLAND_ZOOM } from '../../data/bundeslandCoords';
+import { extractPlatePrefix } from '~/data/plateRegions';
+import { BUNDESLAND_COORDS, BUNDESLAND_ZOOM } from '~/data/bundeslandCoords';
 import pb from '../../lib/pb';
 
 // ─── Fetch today's plates ─────────────────────────────────────────────────────

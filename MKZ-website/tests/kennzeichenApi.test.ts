@@ -26,7 +26,7 @@ vi.mock('../src/lib/pb', () => ({
   },
 }));
 
-import { lookupCode } from '../src/api/kennzeichen';
+import { lookupCode } from '~/api/kennzeichen';
 
 describe('kennzeichen API', () => {
   beforeEach(() => {

@@ -10,12 +10,12 @@
  * Interactions: login, plate input, map drag, clicks on this component.
  */
 import { Component, Show, createSignal, createEffect, onMount, onCleanup } from 'solid-js';
-import { useMap } from '../map/MapContext';
-import { user } from '../../store/auth';
-import { extractPlatePrefix } from '../../data/plateRegions';
-import { BUNDESLAND_COORDS, BUNDESLAND_ZOOM } from '../../data/bundeslandCoords';
+import { useMap } from '~/components/map';
+import { user } from '~/store/auth';
+import { extractPlatePrefix } from '~/data/plateRegions';
+import { BUNDESLAND_COORDS, BUNDESLAND_ZOOM } from '~/data/bundeslandCoords';
 import pb from '../../lib/pb';
-import { idleEnabled } from '../../store/idle';
+import { idleEnabled } from '~/store/idle';
 import type { RegionData } from './RegionCallout';
 
 // ─── Constants (exported for testing) ─────────────────────────────────────────

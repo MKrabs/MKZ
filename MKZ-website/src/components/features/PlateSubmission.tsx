@@ -2,9 +2,9 @@ import { Component, Show, createSignal, createEffect, createMemo, onCleanup } fr
 import LicensePlate from '../common/LicensePlate';
 import Button from '../common/Button';
 import LoginNudge from '../common/LoginNudge';
-import { useMap } from '../map/MapContext';
-import { extractPlatePrefix } from '../../data/plateRegions';
-import { lookupCode, type KennzeichenRecord } from '../../api/kennzeichen';
+import { useMap } from '~/components/map';
+import { extractPlatePrefix } from '~/data/plateRegions';
+import { lookupCode, type KennzeichenRecord } from '~/api/kennzeichen';
 import {
   checkSeen,
   markSeen,
@@ -13,9 +13,9 @@ import {
   removeSeen,
   getSeenImageUrl,
   type SeenPlateRecord,
-} from '../../api/seenPlates';
-import { user } from '../../store/auth';
-import { BUNDESLAND_COORDS, BUNDESLAND_ZOOM } from '../../data/bundeslandCoords';
+} from '~/api/seenPlates';
+import { user } from '~/store/auth';
+import { BUNDESLAND_COORDS, BUNDESLAND_ZOOM } from '~/data/bundeslandCoords';
 import RegionCallout, { type RegionData } from './RegionCallout';
 
 // ─── Constants ────────────────────────────────────────────────────────────────

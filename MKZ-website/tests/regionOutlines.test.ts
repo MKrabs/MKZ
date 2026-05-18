@@ -2,7 +2,7 @@
  * RegionOutlines — tests for the region outline data and lookup utilities.
  */
 import { describe, it, expect } from 'vitest';
-import { getRegionOutline, getRegionOutlineLow } from '../src/data/regionOutlines';
+import { getRegionOutline, getRegionOutlineLow } from '~/data/regionOutlines';
 
 describe('regionOutlines — data integrity', () => {
   it('low-res data has 400 Kreise', () => {

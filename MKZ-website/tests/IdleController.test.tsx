@@ -48,7 +48,7 @@ vi.mock('../src/store/auth', () => ({
 }));
 
 import IdleController, { IDLE_TIMEOUT, TYPING_INTERVAL } from '../src/components/features/IdleController';
-import { MapContext, type MapContextValue } from '../src/components/map/MapContext';
+import { MapContext, type MapContextValue } from '~/components/map';
 
 const mockFlyToCoords = vi.fn();
 const mockStopIdle = vi.fn();

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractPlatePrefix, getCityForPlate, PLATE_PREFIX_MAP } from '../src/data/plateRegions';
+import { extractPlatePrefix, getCityForPlate, PLATE_PREFIX_MAP } from '~/data/plateRegions';
 
 describe('extractPlatePrefix', () => {
   it('extracts single-letter prefix', () => {

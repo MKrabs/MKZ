@@ -26,7 +26,7 @@ import {
   removeSeen,
   listSeen,
   getSeenImageUrl,
-} from '../src/api/seenPlates';
+} from '~/api/seenPlates';
 
 function sp() {
   _colMocks['seen_plates'] ??= makeMockCol();
