@@ -1,19 +1,40 @@
 import { Component, onMount, onCleanup, createEffect } from 'solid-js';
 import { useMap } from '~/components/map';
+import REGION_LOW from '~/data/region-outlines-low.json';
 
 /**
- * Minimal IdleController:
- * - If the submission input is empty and the map is idle for 5s, set idle = true
- * - Otherwise idle = false
- * - While idle, log that an action would be fired ("idle action: would input city code")
+ * IdleController — placeholder animation across many cities.
+ *
+ * Sequence per city:
+ * - Start at default '<city code>' placeholder (PlateSubmission sets this)
+ * - Delete default one char at a time to empty
+ * - Type first 1..2 chars of city name (uppercase) one char at a time
+ *   wait briefly, then delete back to empty
+ * - Type '<', '<c', '<ci', '<cit', '<city' progressively
+ * - Wait, zoom out and pan a bit, restore placeholder, move to next city
+ *
+ * Only runs when map is idle and input value is empty; user typing cancels it.
  */
 
 const IDLE_MS = 5000;
 const BETWEEN_MS = 5000; // wait after typing before zoom/pan
-const SAMPLE_CODES = ['M', 'B', 'KA', 'F', 'K', 'D', 'S'];
+const CHAR_INTERVAL = 200;
+const CITY_COUNT = 20;
+
+function pickRandomCities(n: number) {
+  const names: string[] = (REGION_LOW as any).features.map((f: any) => f.properties?.gen).filter(Boolean);
+  // shuffle
+  for (let i = names.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [names[i], names[j]] = [names[j], names[i]];
+  }
+  return names.slice(0, Math.min(n, names.length));
+}
 
 const IdleController: Component = () => {
   const mapCtx = useMap();
+
+  const cities = pickRandomCities(CITY_COUNT);
 
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
   let idle = false;
@@ -34,11 +55,9 @@ const IdleController: Component = () => {
     const mapIsIdle = mapCtx.isIdle();
 
     if (mapIsIdle && inputVal.trim() === '') {
-      // schedule idle after timeout
       idleTimer = setTimeout(() => {
         idle = true;
         console.log('user idle');
-        // start performing actions
         startIdleSequence();
       }, IDLE_MS);
     } else {
@@ -50,30 +69,63 @@ const IdleController: Component = () => {
     }
   }
 
+  async function animateDeletion(input: HTMLInputElement, text: string) {
+    for (let i = text.length; i >= 0 && idle; i--) {
+      input.setAttribute('placeholder', text.slice(0, i));
+      await new Promise((r) => (idle ? setTimeout(r, CHAR_INTERVAL) : r()));
+    }
+  }
+
+  async function animateTyping(input: HTMLInputElement, text: string) {
+    for (let i = 1; i <= text.length && idle; i++) {
+      input.setAttribute('placeholder', text.slice(0, i));
+      await new Promise((r) => (idle ? setTimeout(r, CHAR_INTERVAL) : r()));
+    }
+  }
+
   async function startIdleSequence() {
     if (runningSequence) return;
     runningSequence = true;
-    while (idle) {
-      // pick a random city code
-      const code = SAMPLE_CODES[Math.floor(Math.random() * SAMPLE_CODES.length)];
-      const input = document.querySelector<HTMLInputElement>('[data-testid="license-plate-input"]');
-      if (!input) break;
 
-      // type into placeholder character by character (does not fire input events)
-      const originalPlaceholder = input.getAttribute('placeholder') ?? '';
-      for (let i = 1; i <= code.length && idle; i++) {
-        input.setAttribute('placeholder', code.slice(0, i));
-        await new Promise<void>((r) => (idle ? setTimeout(r, 200) : r()));
+    const input = document.querySelector<HTMLInputElement>('[data-testid="license-plate-input"]');
+    if (!input) { runningSequence = false; return; }
+
+    const originalPlaceholder = input.getAttribute('placeholder') ?? '<city code>';
+
+    for (const city of cities) {
+      if (!idle) break;
+
+      const name = (city || '').trim();
+      const upName = name.toUpperCase();
+
+      // 1) Delete default to empty
+      await animateDeletion(input, originalPlaceholder);
+      if (!idle) break;
+
+      // 2) Type first 1..2 chars of city name
+      const two = upName.slice(0, 2);
+      await animateTyping(input, two);
+      if (!idle) break;
+
+      // wait briefly, then delete to 1 then to empty
+      await new Promise((r) => (idle ? setTimeout(r, 500) : r()));
+      await animateDeletion(input, two.slice(0, 1));
+      if (!idle) break;
+      await animateDeletion(input, '');
+      if (!idle) break;
+
+      // 3) Type '<', '<C', '<CI', ... up to a few chars
+      const maxChars = Math.min(5, upName.length);
+      for (let i = 0; i <= maxChars && idle; i++) {
+        const txt = '<' + upName.slice(0, i);
+        input.setAttribute('placeholder', txt);
+        await new Promise((r) => (idle ? setTimeout(r, CHAR_INTERVAL) : r()));
       }
+      if (!idle) break;
 
-      // wait BEFORE zoom/pan
-      await new Promise<void>((r) => (idle ? setTimeout(r, BETWEEN_MS) : r()));
-      if (!idle) {
-        input.setAttribute('placeholder', originalPlaceholder);
-        break;
-      }
-
-      // zoom out to Germany view then pan a bit
+      // 4) Wait, zoom out and pan slightly
+      await new Promise((r) => (idle ? setTimeout(r, BETWEEN_MS) : r()));
+      if (!idle) break;
       try {
         mapCtx.flyToCoords([10.0, 51.0], 5);
         const dx = (Math.random() - 0.5) * 2;
@@ -83,18 +135,18 @@ const IdleController: Component = () => {
         // ignore
       }
 
-      // clear placeholder
+      // restore placeholder
       input.setAttribute('placeholder', originalPlaceholder);
 
-      // wait a short interval before next code
-      await new Promise<void>((r) => (idle ? setTimeout(r, 1000) : r()));
+      // small pause
+      await new Promise((r) => (idle ? setTimeout(r, 1000) : r()));
     }
+
     runningSequence = false;
   }
 
   function stopIdleSequence() {
     runningSequence = false;
-    // clearing idle will break the loop
   }
 
   onMount(() => {
@@ -104,7 +156,6 @@ const IdleController: Component = () => {
       // ignore programmatic changes if flagged
       if (t?.dataset?.mkzProgrammatic === '1') return;
 
-      // user typed: log action, cancel any scheduled idle and re-evaluate
       console.log('action: typing');
       clearIdleTimer();
       if (idle) {
@@ -115,10 +166,8 @@ const IdleController: Component = () => {
     };
 
     if (input) input.addEventListener('input', onInput as EventListener);
-    // also attach a document-level listener to catch events reliably in tests
     document.addEventListener('input', onInput as EventListener);
 
-    // initial evaluation
     evaluateIdle();
 
     onCleanup(() => {
@@ -128,7 +177,6 @@ const IdleController: Component = () => {
     });
   });
 
-  // react to map idle state changes (accessor read will subscribe)
   createEffect(() => {
     mapCtx.isIdle();
     evaluateIdle();
