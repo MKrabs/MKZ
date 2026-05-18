@@ -146,7 +146,7 @@ const PlateSubmission: Component = () => {
     }
   });
 
-  const DEFAULT_PLACEHOLDER = 'KA NR 355';
+  const DEFAULT_PLACEHOLDER = '<city code>';
   // Observe placeholder changes on the input element when the input value is empty
   createEffect(() => {
     // run once on mount to set up observer
@@ -324,7 +324,7 @@ const PlateSubmission: Component = () => {
               editable
               onInput={(v) => { setPlateText(v); setSubmitError(null); setSubmitSuccess(false); }}
               size="lg"
-              placeholder="KA NR 355"
+              placeholder={DEFAULT_PLACEHOLDER}
             />
           </div>
 
