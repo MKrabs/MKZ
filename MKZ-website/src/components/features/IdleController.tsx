@@ -1,6 +1,6 @@
 import { Component, onMount, onCleanup, createEffect } from 'solid-js';
 import { useMap } from '../map/MapContext';
-import { extractPlatePrefix } from '~/data/plateRegions';
+import { user } from '~/store/auth';
 
 /**
  * IdleController:
@@ -13,7 +13,7 @@ import { extractPlatePrefix } from '~/data/plateRegions';
  */
 
 const IDLE_MS = 5000;
-const BETWEEN_CODE_MS = 20000; // 20 seconds between codes
+const BETWEEN_CODE_MS = 5000; // 20 seconds between codes
 const TYPING_INTERVAL = 180; // ms per char
 
 const SAMPLE_CODES = ['M', 'B', 'KA', 'F', 'K', 'D', 'S'];
@@ -60,6 +60,7 @@ const IdleController: Component = () => {
     scheduleIdle();
   }
 
+
   function startIdle() {
     isIdle = true;
     // announce idle
@@ -68,9 +69,12 @@ const IdleController: Component = () => {
     const input = document.querySelector<HTMLInputElement>('[data-testid="license-plate-input"]');
     const inputVal = input?.value ?? '';
 
-    if (!input || inputVal.trim() === '') {
-      // idle and no input -> start typing random codes
+    // Only run the automated demo when NOT logged in
+    if (user() == null && (!input || inputVal.trim() === '')) {
+      // idle, not logged in, and input empty -> start automated city demo
       startTypingSequence();
+    } else if (!input || inputVal.trim() === '') {
+      // input empty but user logged in — do nothing (or could implement other behavior)
     } else {
       // idle and input present -> cycle fun facts
       startFunFactCycle();
@@ -81,20 +85,48 @@ const IdleController: Component = () => {
   function startTypingSequence() {
     if (isTypingSequence) return;
     isTypingSequence = true;
-    const runNext = () => {
+    const runNext = async () => {
       if (!isIdle) return;
-      const code = SAMPLE_CODES[Math.floor(Math.random() * SAMPLE_CODES.length)];
-      typeIntoInput(code, () => {
-        // after typing complete, wait BETWEEN_CODE_MS, then clear and type next
-        betweenTimer = setTimeout(() => {
-          const input = document.querySelector<HTMLInputElement>('[data-testid="license-plate-input"]');
-          if (input) {
-            input.value = '';
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-          }
-          runNext();
-        }, BETWEEN_CODE_MS);
+      // pick a random city name from SAMPLE_CODES (these are placeholders)
+      const city = SAMPLE_CODES[Math.floor(Math.random() * SAMPLE_CODES.length)];
+
+      // Programmatically set the input but mark it as programmatic so our input listener ignores it
+      const input = document.querySelector<HTMLInputElement>('[data-testid="license-plate-input"]');
+      if (input) {
+        input.dataset.mkzProgrammatic = '1';
+      }
+
+      await new Promise<void>((res) => {
+        typeIntoInput(city, () => res());
       });
+
+      // remove programmatic marker after a short delay
+      if (input) {
+        setTimeout(() => delete input.dataset.mkzProgrammatic, 50);
+      }
+
+      // Wait 5 seconds before zooming out and panning
+      await new Promise((r) => setTimeout(r, 5000));
+
+      if (!isIdle) return;
+
+      // Zoom out to Germany view and pan aimlessly a bit
+      mapCtx.flyToCoords([10.0, 51.0], 5);
+      // slight random pan
+      const dx = (Math.random() - 0.5) * 2; // -1..1
+      const dy = (Math.random() - 0.5) * 2;
+      mapCtx.flyToCoords([10.0 + dx, 51.0 + dy], 5);
+
+      // After panning, wait a moment and clear input (without firing input event)
+      await new Promise((r) => setTimeout(r, 800));
+      if (input) {
+        input.value = '';
+      }
+
+      // wait BETWEEN_CODE_MS then repeat
+      betweenTimer = setTimeout(() => {
+        if (isIdle) runNext();
+      }, BETWEEN_CODE_MS);
     };
 
     runNext();
@@ -118,7 +150,11 @@ const IdleController: Component = () => {
       if (!isIdle) { onComplete?.(); return; }
       idx++;
       input.value = code.slice(0, idx);
-      input.dispatchEvent(new Event('input', { bubbles: true }));
+      // Only dispatch input event if this is not marked programmatic (tests will simulate user by dispatching events themselves)
+      const isProgrammatic = input.dataset.mkzProgrammatic === '1';
+      if (!isProgrammatic) {
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
       if (idx < code.length) {
         typingTimer = setTimeout(step, TYPING_INTERVAL);
       } else {
