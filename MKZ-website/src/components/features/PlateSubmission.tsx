@@ -146,17 +146,30 @@ const PlateSubmission: Component = () => {
     }
   });
 
+  const DEFAULT_PLACEHOLDER = 'KA NR 355';
   // Observe placeholder changes on the input element when the input value is empty
   createEffect(() => {
     // run once on mount to set up observer
     const input = document.querySelector<HTMLInputElement>('[data-testid="license-plate-input"]');
     if (!input) return;
 
+    let lastWasDefault = false;
+
     const observer = new MutationObserver(() => {
       // only consider placeholder when the actual input is empty
       if ((input.value ?? '').trim() === '') {
         const ph = (input.getAttribute('placeholder') ?? '').trim();
         if (ph) scheduleLookupFor(ph);
+
+        // If placeholder is the default, fly to default center/zoom once
+        const isDefault = ph === DEFAULT_PLACEHOLDER;
+        if (isDefault && !lastWasDefault) {
+          lastWasDefault = true;
+          // fly to Germany default
+          mapCtx.flyToCoords([10.0, 51.0], 5);
+        } else if (!isDefault) {
+          lastWasDefault = false;
+        }
       }
     });
 
