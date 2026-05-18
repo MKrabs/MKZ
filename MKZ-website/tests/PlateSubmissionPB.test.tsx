@@ -35,6 +35,18 @@ vi.mock('../src/lib/pb', () => ({
   },
 }));
 
+vi.mock('../src/api/kennzeichen', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/api/kennzeichen')>();
+  return {
+    ...actual,
+    fetchGeoRegions: vi.fn().mockResolvedValue([{
+      id: 'geo1', ags: '08212', gen: 'Karlsruhe',
+      low: { type: 'Polygon', coordinates: [[[8.3, 48.9], [8.5, 48.9], [8.5, 49.1], [8.3, 49.1], [8.3, 48.9]]] },
+      high: null,
+    }]),
+  };
+});
+
 // ─── Auth mock ────────────────────────────────────────────────────────────────
 let mockUser: any = null;
 vi.mock('../src/store/auth', () => ({
