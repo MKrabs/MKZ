@@ -3,21 +3,29 @@ import { render } from '@solidjs/testing-library';
 import { MapContext, type MapContextValue } from '../src/components/map/MapContext';
 
 vi.mock('../src/data/region-outlines-low.json', () => ({
-  type: 'FeatureCollection',
-  features: [
-    { type: 'Feature', properties: { ags: '09162', gen: 'München' }, geometry: { type: 'Polygon', coordinates: [[[11.58,48.13],[11.59,48.13],[11.59,48.14],[11.58,48.14]]] } },
-    { type: 'Feature', properties: { ags: '11', gen: 'Berlin' }, geometry: { type: 'Polygon', coordinates: [[[13.4,52.5],[13.41,52.5],[13.41,52.51],[13.4,52.51]]] } },
-  ]
+  default: {
+    type: 'FeatureCollection',
+    features: [
+      { type: 'Feature', properties: { ags: '09162', gen: 'München' }, geometry: { type: 'Polygon', coordinates: [[[11.58,48.13],[11.59,48.13],[11.59,48.14],[11.58,48.14]]] } },
+      { type: 'Feature', properties: { ags: '11', gen: 'Berlin' }, geometry: { type: 'Polygon', coordinates: [[[13.4,52.5],[13.41,52.5],[13.41,52.51],[13.4,52.51]]] } },
+    ]
+  }
 }));
 
-const mockAddSource = vi.fn();
-const mockRemoveSource = vi.fn();
-const mockAddLayer = vi.fn();
-const mockRemoveLayer = vi.fn();
-
 function makeMapContext(): MapContextValue {
+  const layers = new Set<string>();
+  const sources = new Set<string>();
+
+  const mapMock: any = {};
+  mapMock.addSource = vi.fn((id: string) => { sources.add(id); });
+  mapMock.addLayer = vi.fn((layer: any) => { layers.add(layer.id); });
+  mapMock.getLayer = vi.fn((id: string) => layers.has(id) ? {} : undefined);
+  mapMock.removeLayer = vi.fn((id: string) => { layers.delete(id); });
+  mapMock.getSource = vi.fn((id: string) => sources.has(id) ? {} : undefined);
+  mapMock.removeSource = vi.fn((id: string) => { sources.delete(id); });
+
   return {
-    map: () => ({ addSource: mockAddSource, removeSource: mockRemoveSource, addLayer: mockAddLayer, removeLayer: mockRemoveLayer } as any),
+    map: () => mapMock,
     flyToCity: vi.fn(),
     flyToCoords: vi.fn(),
     isIdle: () => false,
@@ -36,27 +44,29 @@ describe('MapRegionHighlighter', () => {
   it('adds a GeoJSON source and layers when region prop is provided', () => {
     const region = { code: 'M', districtName: 'München', bundesland: 'Bayern', plateCount: 10, funFacts: ['x'] };
 
-    render(() => <MapContext.Provider value={makeMapContext()}><MapRegionHighlighter region={region} /></MapContext.Provider>);
+    const ctx = makeMapContext();
+    render(() => <MapContext.Provider value={ctx}><MapRegionHighlighter region={region} /></MapContext.Provider>);
 
-    expect(mockAddSource).toHaveBeenCalled();
-    expect(mockAddLayer).toHaveBeenCalled();
+    expect(ctx.map().addSource).toHaveBeenCalled();
+    expect(ctx.map().addLayer).toHaveBeenCalled();
   });
 
   it('removes previous highlight when region changes', () => {
     const regionA = { code: 'M', districtName: 'München', bundesland: 'Bayern', plateCount: 10, funFacts: ['x'] };
     const regionB = { code: 'B', districtName: 'Berlin', bundesland: 'Berlin', plateCount: 5, funFacts: ['y'] };
 
-    render(() => <MapContext.Provider value={makeMapContext()}><MapRegionHighlighter region={regionA} /></MapContext.Provider>);
+    const ctx = makeMapContext();
+    render(() => <MapContext.Provider value={ctx}><MapRegionHighlighter region={regionA} /></MapContext.Provider>);
 
     // initial
-    expect(mockAddSource).toHaveBeenCalledTimes(1);
-    expect(mockAddLayer).toHaveBeenCalledTimes(2); // fill + outline
+    expect(ctx.map().addSource).toHaveBeenCalledTimes(1);
+    expect(ctx.map().addLayer).toHaveBeenCalledTimes(2); // fill + outline
 
-    // render new region (second mount) — should remove previous highlight
-    render(() => <MapContext.Provider value={makeMapContext()}><MapRegionHighlighter region={regionB} /></MapContext.Provider>);
+    // render again with same context and new region — same map instance
+    render(() => <MapContext.Provider value={ctx}><MapRegionHighlighter region={regionB} /></MapContext.Provider>);
 
     // should have removed previous
-    expect(mockRemoveLayer).toHaveBeenCalled();
-    expect(mockRemoveSource).toHaveBeenCalled();
+    expect(ctx.map().removeLayer).toHaveBeenCalled();
+    expect(ctx.map().removeSource).toHaveBeenCalled();
   });
 });

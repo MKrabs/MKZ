@@ -15,6 +15,7 @@ import { user } from '../../store/auth';
 import { extractPlatePrefix } from '../../data/plateRegions';
 import { BUNDESLAND_COORDS, BUNDESLAND_ZOOM } from '../../data/bundeslandCoords';
 import pb from '../../lib/pb';
+import { idleEnabled } from '../../store/idle';
 import type { RegionData } from './RegionCallout';
 
 // ─── Constants (exported for testing) ─────────────────────────────────────────
@@ -79,6 +80,11 @@ const IdleController: Component<IdleControllerProps> = (props) => {
     setIsIdling(true);
 
     // Determine which mode
+    if (!idleEnabled()) {
+      // idle globally disabled
+      return;
+    }
+
     if (props.activeRegion && props.activeRegion.funFacts.length > 0) {
       // Mode 3: cycle fun facts
       startFunFactCycle();

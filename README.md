@@ -45,7 +45,9 @@ Migrations run automatically on first start of `mkz-pocketbase`.
 ```bash
 # Website
 cd MKZ-website && npm install && npm run dev
+```
 
+```bash
 # PocketBase
 cd MKZ-pocketbase && go run . serve --dir pb_data
 ```

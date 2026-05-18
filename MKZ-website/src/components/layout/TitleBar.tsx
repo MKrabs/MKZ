@@ -1,4 +1,5 @@
 import { Component, createSignal, Show } from 'solid-js';
+import { idleEnabled, setIdleEnabled } from '../../store/idle';
 import ProfileAvatar from '../common/ProfileAvatar';
 import { AuthModal } from '../auth';
 import { user, logout } from '../../store/auth';
@@ -16,7 +17,21 @@ const TitleBar: Component = () => {
             MKZ
           </h1>
 
-          {/* Right side: auth state */}
+          {/* Idle toggle + Right side: auth state */}
+          <div class="flex items-center gap-3">
+            <button
+              data-testid="idle-toggle"
+              onClick={() => setIdleEnabled(!idleEnabled())}
+              class="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-white/10 text-sm text-gray-700 hover:bg-white/20 transition-colors"
+              title="Toggle idle animations"
+            >
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="9" stroke-width="1.5" class={idleEnabled() ? 'text-mkz-primary' : 'text-gray-300'} />
+                <path d="M12 7v5l3 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span class="hidden sm:inline text-xs">{idleEnabled() ? 'Idle On' : 'Idle Off'}</span>
+            </button>
+          </div>
           <Show
             when={user()}
             fallback={
