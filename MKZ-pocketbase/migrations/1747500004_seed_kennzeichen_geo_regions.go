@@ -805,17 +805,44 @@ func init() {
 		{"yi3soc9rwofg9ci", "yh8kmhk86uhs5qz"}, // ÜB → Sigmaringen (08437) [override]
 		}
 
-		for _, link := range links {
-			rec := core.NewRecord(collection)
-			rec.Set("kennzeichen", link[0])
-			rec.Set("geo_region", link[1])
-			if err := app.Save(rec); err != nil {
-				return err
-			}
-		}
-		return nil
-	}, func(app core.App) error {
-		_, err := app.DB().NewQuery("DELETE FROM kennzeichen_geo_regions").Execute()
-		return err
-	})
+        for _, link := range links {
+            kzCode, geoGen := link[0], link[1]
+
+            kz, err := app.FindFirstRecordByFilter(
+                "kennzeichen", "code = {:code}", map[string]any{"code": kzCode},
+            )
+            if err != nil {
+                // Code not found — skip silently (phased-out codes may not exist)
+                continue
+            }
+
+            geo, err := app.FindFirstRecordByFilter(
+                "geo_regions", "gen = {:gen}", map[string]any{"gen": geoGen},
+            )
+            if err != nil {
+                continue
+            }
+
+            // Skip if junction already exists (idempotent)
+            existing, _ := app.FindFirstRecordByFilter(
+                "kennzeichen_geo_regions",
+                "kennzeichen = {:kz} && geo_region = {:geo}",
+                map[string]any{"kz": kz.Id, "geo": geo.Id},
+            )
+            if existing != nil {
+                continue
+            }
+
+            rec := core.NewRecord(collection)
+            rec.Set("kennzeichen", kz.Id)
+            rec.Set("geo_region", geo.Id)
+            if err := app.Save(rec); err != nil {
+                return err
+            }
+        }
+        return nil
+    }, func(app core.App) error {
+        _, err := app.DB().NewQuery("DELETE FROM kennzeichen_geo_regions").Execute()
+        return err
+    })
 }
