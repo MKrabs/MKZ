@@ -10,3 +10,6 @@ MKZ-pocketbase/pocketbase
 .idea/
 .vscode/
 *.swp
+
+data/tiles/*
+!data/tiles/.gitkeep
