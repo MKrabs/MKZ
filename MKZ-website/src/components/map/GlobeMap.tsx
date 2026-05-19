@@ -18,11 +18,17 @@ import { CITIES } from '~/data/cities';
 
 // ─── Map style ─────────────────────────────────────────────────────────────
 
-const TILE_URL = import.meta.env.DEV
-  ? 'http://localhost:3100/tiles/{z}/{x}/{y}'
-  : '/tiles/{z}/{x}/{y}';
-
 const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+
+function getTileUrl() {
+  const tilePath = '/tiles/{z}/{x}/{y}';
+
+  if (import.meta.env.DEV) {
+    return `http://localhost:3100${tilePath}`;
+  }
+
+  return `${window.location.origin}${tilePath}`;
+}
 
 // ─── Idle animation constants ─────────────────────────────────────────────────
 
@@ -118,7 +124,7 @@ const GlobeMap: Component<GlobeMapProps> = (props) => {
         if (disposed) return;
 
         if (style.sources?.openmaptiles) {
-          style.sources.openmaptiles.tiles = [TILE_URL];
+          style.sources.openmaptiles.tiles = [getTileUrl()];
           delete style.sources.openmaptiles.url;
         }
 
