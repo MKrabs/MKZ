@@ -107,47 +107,68 @@ const GlobeMap: Component<GlobeMapProps> = (props) => {
   }
 
   // ── Map lifecycle ─────────────────────────────────────────────────────
+  onMount(() => {
+    let disposed = false;
+    let createdMap: maplibregl.Map | null = null;
 
-  onMount(async () => {
-    const style = await fetch(STYLE_URL).then(r => r.json());
+    async function initMap() {
+      try {
+        const style = await fetch(STYLE_URL).then(r => r.json());
 
-    if (style.sources?.openmaptiles) {
-      style.sources.openmaptiles.tiles = [TILE_URL];
-      delete style.sources.openmaptiles.url;
+        if (disposed) return;
+
+        if (style.sources?.openmaptiles) {
+          style.sources.openmaptiles.tiles = [TILE_URL];
+          delete style.sources.openmaptiles.url;
+        }
+
+        const m = new maplibregl.Map({
+          container: containerRef!,
+          style,
+          center: [10.0, 51.0],
+          zoom: IDLE_ZOOM,
+          bearing: 0,
+          pitch: 0,
+          dragRotate: false,
+          pitchWithRotate: false,
+          renderWorldCopies: true,
+          attributionControl: { compact: true },
+        });
+
+        if (disposed) {
+          m.remove();
+          return;
+        }
+
+        createdMap = m;
+        mapRef = m;
+
+        m.on('load', () => {
+          // Allow pinch-zoom but never pinch-rotate
+          m.touchZoomRotate.disableRotation();
+
+          setMapInstance(m);
+          startIdle();
+        });
+
+        m.on('error', (e) => {
+          if (e.error?.message?.includes('Failed to fetch')) return;
+          console.error('[GlobeMap]', e.error);
+        });
+      } catch (err) {
+        if (!disposed) {
+          console.error('[GlobeMap] failed to initialise map', err);
+        }
+      }
     }
 
-    const m = new maplibregl.Map({
-      container: containerRef!,
-      style,
-      center: [10.0, 51.0],
-      zoom: IDLE_ZOOM,
-      bearing: 0,
-      pitch: 0,
-      dragRotate: false,
-      pitchWithRotate: false,
-      renderWorldCopies: true,
-      attributionControl: { compact: true },
-    });
-
-    mapRef = m;
-
-    m.on('load', () => {
-      // Allow pinch-zoom but never pinch-rotate
-      m.touchZoomRotate.disableRotation();
-
-      setMapInstance(m);
-      startIdle();
-    });
-
-    m.on('error', (e) => {
-      if (e.error?.message?.includes('Failed to fetch')) return;
-      console.error('[GlobeMap]', e.error);
-    });
+    void initMap();
 
     onCleanup(() => {
+      disposed = true;
       stopIdle();
       mapRef = null;
-      m.remove();
+      createdMap?.remove();
     });
   });
 
