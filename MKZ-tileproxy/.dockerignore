@@ -1,0 +1,5 @@
+tiles/
+*.mbtiles
+*.db
+*.sqlite
+.git

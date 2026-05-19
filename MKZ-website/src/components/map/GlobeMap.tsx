@@ -16,9 +16,13 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapContext, type MapContextValue } from './MapContext';
 import { CITIES } from '~/data/cities';
 
-// ─── Map style ────────────────────────────────────────────────────────────────
+// ─── Map style ─────────────────────────────────────────────────────────────
 
-const FLAT_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+const TILE_URL = import.meta.env.DEV
+  ? 'http://localhost:3100/tiles/{z}/{x}/{y}'
+  : '/tiles/{z}/{x}/{y}';
+
+const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
 // ─── Idle animation constants ─────────────────────────────────────────────────
 
@@ -104,10 +108,17 @@ const GlobeMap: Component<GlobeMapProps> = (props) => {
 
   // ── Map lifecycle ─────────────────────────────────────────────────────
 
-  onMount(() => {
+  onMount(async () => {
+    const style = await fetch(STYLE_URL).then(r => r.json());
+
+    if (style.sources?.openmaptiles) {
+      style.sources.openmaptiles.tiles = [TILE_URL];
+      delete style.sources.openmaptiles.url;
+    }
+
     const m = new maplibregl.Map({
       container: containerRef!,
-      style: FLAT_STYLE,
+      style,
       center: [10.0, 51.0],
       zoom: IDLE_ZOOM,
       bearing: 0,

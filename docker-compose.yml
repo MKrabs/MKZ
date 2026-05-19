@@ -1,22 +1,36 @@
 services:
-
   mkz:
     image: ghcr.io/mkrabs/mkz:${MKZ_VERSION:-latest}
     container_name: mkz
     restart: unless-stopped
-    # No host port mapping needed — NPM reaches the container directly
-    # via the shared Docker network using 'mkz:80'.
-    # Uncomment below only if you need direct host access (e.g. for testing):
-    # ports:
-    #   - "${MKZ_PORT:-8998}:80"
     volumes:
-      - ${MKZ_DATA_DIR:?MKZ_DATA_DIR required — e.g. /mnt/Toshiba/mkz}/pb_data:/app/pb_data
+      - ${MKZ_DATA_DIR:?MKZ_DATA_DIR required}/pb_data:/app/pb_data
     networks:
       - proxy
-    # PB_URL is optional — omit it (or set to "") for same-origin routing.
-    # Only set it if PocketBase is exposed on a separate public domain.
-    # environment:
-    #   PB_URL: https://pb.yourdomain.com
+    depends_on:
+      tileproxy:
+        condition: service_healthy
+
+  tileproxy:
+    build: ./MKZ-tileproxy
+    container_name: mkz-tileproxy
+    restart: unless-stopped
+    volumes:
+      # Maps your local ./data/tiles folder into the container
+      - ${MKZ_DATA_DIR:?MKZ_DATA_DIR required}/tiles:/tiles
+    environment:
+      TILES_DB: /tiles/cache.mbtiles
+      LISTEN_ADDR: :3100
+      UPSTREAM_URL: "https://tiles.openfreemap.org/planet/20260513_001001_pt/%d/%d/%d.pbf"
+      UPSTREAM_TIMEOUT: 15s
+      MISS_TTL: 3600
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3100/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 networks:
   proxy:

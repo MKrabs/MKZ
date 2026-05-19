@@ -1,17 +1,22 @@
 :80 {
     encode gzip
 
-    # PocketBase: REST API
+    # Tile proxy — write-through cache, falls back to OpenFreeMap CDN
+    handle /tiles/* {
+        reverse_proxy tileproxy:3100
+    }
+
+    # PocketBase REST API
     handle /api/* {
         reverse_proxy localhost:8090
     }
 
-    # PocketBase: admin dashboard
+    # PocketBase admin
     handle /_/* {
         reverse_proxy localhost:8090
     }
 
-    # SolidJS SPA — all other paths fall back to index.html
+    # SolidJS SPA
     handle {
         root * /srv
         try_files {path} /index.html

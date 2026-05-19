@@ -13,3 +13,18 @@ MKZ-pocketbase/pocketbase
 
 data/tiles/*
 !data/tiles/.gitkeep
+# Tile cache databases
+data/tiles/*.mbtiles
+data/tiles/*.mbtiles-*
+MKZ-tileproxy/tiles/
+/MKZ-tileproxy/mkz-tileproxy
+data/tiles/cache.mbtiles
+data/tiles/cache.mbtiles-wal
+data/tiles/cache.mbtiles-shm
+MKZ-tileproxy/tiles/cache.mbtiles
+*.mbtiles
+*.sqlite
+*.db
+
+MKZ-tileproxy/mkz-tileproxy
+
