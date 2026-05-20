@@ -15,7 +15,6 @@ import {
   type SeenPlateRecord,
 } from '~/api/seenPlates';
 import { user } from '~/store/auth';
-import RegionCallout, { type RegionData } from './RegionCallout';
 import { IDLE_CODE_EVENT, HOME_PLACEHOLDER, type IdlePlateCodeEvent } from '~/components/features/IdleController';
 import MapRegionHighlighter from '~/components/map/MapRegionHighlighter';
 
@@ -281,36 +280,9 @@ const PlateSubmission: Component = () => {
     }
   };
 
-  // ── Region callout ────────────────────────────────────────────────────────
-
-  const regionCalloutData = createMemo<RegionData | null>(() => {
-    const kz = kennzeichen();
-    if (!kz) return null;
-    return {
-      code:         kz.code,
-      districtName: kz.district_name,
-      bundesland:   kz.bundesland,
-      plateCount:   0,
-      funFacts: [
-        `${kz.district_name} uses the prefix "${kz.code}" on license plates.`,
-        `Located in ${kz.bundesland}, one of Germany's 16 federal states.`,
-        kz.derivation
-          ? `The code "${kz.code}" derives from: ${kz.derivation}.`
-          : `Region code: ${kz.code}.`,
-      ],
-    };
-  });
-
-  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div class="grid md:grid-cols-2 gap-4 lg:mt-48 md:mt-32" data-testid="plate-submission">
-      <Show when={regionCalloutData()}>
-        <div class="md:col-span-2 lg:col-start-2 lg:col-span-1">
-          <RegionCallout region={regionCalloutData()} />
-        </div>
-      </Show>
-
       <div class="bg-white/40 backdrop-blur-sm rounded-xl shadow-lg border border-white/40 p-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">Submit a Plate</h2>
         <div class="flex flex-col gap-4">
