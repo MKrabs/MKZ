@@ -243,7 +243,7 @@ const LoginNudge: Component = () => {
         {/* ── Floating text bubble ─────────────────────────────────── */}
         <div
           data-testid="login-nudge"
-          class="fixed z-[44] bg-white/95 backdrop-blur-sm rounded-xl shadow-lg
+          class="fixed z-44 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg
                  border border-blue-100 px-4 py-3 pointer-events-none"
           style={{
             left: `${bubbleLeft()}px`,

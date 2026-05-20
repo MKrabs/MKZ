@@ -19,7 +19,7 @@ const LicensePlate: Component<LicensePlateProps> = (props) => {
 
   return (
     <div
-      class="inline-flex items-stretch rounded-md border-2 border-plate-border overflow-hidden shadow-md"
+      class="grid auto-cols-max grid-flow-col gap-0 items-stretch rounded-md border-2 border-plate-border overflow-hidden shadow-md"
       data-testid="license-plate"
     >
       {/* EU blue strip */}
@@ -44,7 +44,7 @@ const LicensePlate: Component<LicensePlateProps> = (props) => {
           value={props.text}
           placeholder={props.placeholder ?? 'M AB 1234'}
           onInput={(e) => props.onInput?.(e.currentTarget.value.toUpperCase())}
-          class={`bg-plate-bg font-mono font-bold tracking-wider outline-none uppercase ${sizeClasses()} min-w-25 max-w-[17ch]`}
+          class={`bg-plate-bg font-mono font-bold tracking-wider outline-none uppercase ${sizeClasses()} min-w-2 max-w-[17ch] pointer-events-auto`}
           data-testid="license-plate-input"
         />
       </Show>

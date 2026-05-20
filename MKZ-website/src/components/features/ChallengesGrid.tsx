@@ -83,9 +83,11 @@ const ChallengesGrid: Component = () => {
   };
 
   return (
-    <section data-testid="challenges-grid">
-      <h2 class="text-lg font-semibold text-gray-800 w-fit mb-4 drop-shadow bg-white/40 backdrop-blur-lg rounded-xl p-3">Your Challenges - 🚧 under construction</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <section data-testid="challenges-grid" class="">
+      <h2 class="text-lg font-semibold text-gray-800 w-fit mb-4 drop-shadow bg-white/40 backdrop-blur-lg rounded-xl p-3 pointer-events-none select-none">
+        Your Challenges - 🚧 under construction
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pointer-events-auto">
         <For each={challenges()}>
           {(challenge) => (
             <ChallengeCard
