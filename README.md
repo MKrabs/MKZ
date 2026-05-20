@@ -51,3 +51,7 @@ cd MKZ-website && npm install && npm run dev
 # PocketBase
 cd MKZ-pocketbase && go run . serve --dir pb_data
 ```
+
+```bash
+cd MKZ-tileproxy && TILES_DB=../data/tiles/cache.mbtiles LISTEN_ADDR=:3100 UPSTREAM_URL='https://tiles.openfreemap.org/planet/20260513_001001_pt/%d/%d/%d.pbf' go run .
+```
