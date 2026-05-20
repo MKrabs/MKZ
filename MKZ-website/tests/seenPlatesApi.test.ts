@@ -1,7 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  checkSeen, getSeenImageUrl, listSeen, markSeen, removeSeen, removeSeenImage, updateSeenImage,
+} from '~/api/seenPlates';
 
 // ─── Persistent PB mock ──────────────────────────────────────────────────────
 const _colMocks: Record<string, any> = {};
+
 function makeMockCol() {
   return { getFirstListItem: vi.fn(), create: vi.fn(), delete: vi.fn(), getList: vi.fn(), update: vi.fn() };
 }
@@ -18,16 +22,6 @@ vi.mock('../src/lib/pb', () => ({
   },
 }));
 
-import {
-  checkSeen,
-  markSeen,
-  updateSeenImage,
-  removeSeenImage,
-  removeSeen,
-  listSeen,
-  getSeenImageUrl,
-} from '~/api/seenPlates';
-
 function sp() {
   _colMocks['seen_plates'] ??= makeMockCol();
   return _colMocks['seen_plates'];
@@ -35,9 +29,7 @@ function sp() {
 
 describe('seenPlates API', () => {
   beforeEach(() => {
-    Object.values(_colMocks).forEach((c: any) =>
-      Object.values(c).forEach((fn: any) => fn.mockReset?.()),
-    );
+    Object.values(_colMocks).forEach((c: any) => Object.values(c).forEach((fn: any) => fn.mockReset?.()));
   });
 
   // ─── checkSeen ──────────────────────────────────────────────────────────
@@ -52,9 +44,7 @@ describe('seenPlates API', () => {
     it('queries by plate_text (uppercased)', async () => {
       sp().getFirstListItem.mockResolvedValueOnce({ id: 'sp1' });
       await checkSeen('u1', 'ka nr 355');
-      expect(sp().getFirstListItem).toHaveBeenCalledWith(
-        expect.stringContaining('plate_text = "KA NR 355"'),
-      );
+      expect(sp().getFirstListItem).toHaveBeenCalledWith(expect.stringContaining('plate_text = "KA NR 355"'));
     });
 
     it('returns null when not found', async () => {

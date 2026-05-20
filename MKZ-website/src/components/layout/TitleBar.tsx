@@ -1,14 +1,13 @@
 import { Component, createSignal, Show } from 'solid-js';
-import ProfileAvatar from '../common/ProfileAvatar';
+import { logout, user } from '~/store/auth';
 import { AuthModal } from '../auth';
-import { user, logout } from '~/store/auth';
+import ProfileAvatar from '../common/ProfileAvatar';
 
 const TitleBar: Component = () => {
   const [menuOpen, setMenuOpen] = createSignal(false);
   const [authOpen, setAuthOpen] = createSignal(false);
 
-  return (
-    <>
+  return (<>
       <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-white/30 shadow-sm">
         <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           {/* App name */}
@@ -18,8 +17,7 @@ const TitleBar: Component = () => {
 
           <Show
             when={user()}
-            fallback={
-              /* Not signed in → Sign In button */
+            fallback={/* Not signed in → Sign In button */
               <button
                 onClick={() => setAuthOpen(true)}
                 class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-mkz-primary text-white text-sm font-medium hover:bg-mkz-secondary transition-colors"
@@ -27,11 +25,10 @@ const TitleBar: Component = () => {
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>
                 Sign In
-              </button>
-            }
+              </button>}
           >
             {/* Signed in → user menu */}
             <button
@@ -48,7 +45,7 @@ const TitleBar: Component = () => {
                 size="sm"
               />
               <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
               </svg>
             </button>
           </Show>
@@ -58,7 +55,7 @@ const TitleBar: Component = () => {
       {/* Signed-in side menu */}
       <Show when={menuOpen() && user()}>
         <div class="fixed inset-0 z-50" onClick={() => setMenuOpen(false)}>
-          <div class="absolute inset-0 bg-black/30" />
+          <div class="absolute inset-0 bg-black/30"/>
           <aside
             class="absolute right-0 top-0 h-full w-72 bg-white shadow-xl p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
@@ -68,7 +65,7 @@ const TitleBar: Component = () => {
               <h2 class="text-lg font-semibold">Menu</h2>
               <button onClick={() => setMenuOpen(false)} class="text-gray-400 hover:text-gray-600">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
               </button>
             </div>
@@ -94,13 +91,16 @@ const TitleBar: Component = () => {
 
             <div class="pt-2 border-t">
               <button
-                onClick={() => { logout(); setMenuOpen(false); }}
+                onClick={() => {
+                  logout();
+                  setMenuOpen(false);
+                }}
                 class="w-full flex items-center gap-2 px-3 py-2 rounded-md text-red-600 hover:bg-red-50 transition-colors text-sm font-medium"
                 data-testid="logout-btn"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                 </svg>
                 Sign Out
               </button>
@@ -111,10 +111,9 @@ const TitleBar: Component = () => {
 
       {/* Auth modal */}
       <Show when={authOpen()}>
-        <AuthModal onClose={() => setAuthOpen(false)} />
+        <AuthModal onClose={() => setAuthOpen(false)}/>
       </Show>
-    </>
-  );
+    </>);
 };
 
 export default TitleBar;

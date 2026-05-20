@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@solidjs/testing-library';
+import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import AuthModal from '../src/components/auth/AuthModal';
 
 // ─── Mock auth store ─────────────────────────────────────────────────────────
 const mockLogin = vi.fn();
@@ -22,8 +23,6 @@ vi.mock('../src/lib/pb', () => ({
   },
 }));
 
-import AuthModal from '../src/components/auth/AuthModal';
-
 describe('AuthModal', () => {
   const onClose = vi.fn();
 
@@ -32,7 +31,7 @@ describe('AuthModal', () => {
   });
 
   it('renders in login mode by default', () => {
-    render(() => <AuthModal onClose={onClose} />);
+    render(() => <AuthModal onClose={onClose}/>);
     expect(screen.getByTestId('auth-modal')).toBeInTheDocument();
     expect(screen.getByTestId('auth-email-input')).toBeInTheDocument();
     expect(screen.getByTestId('auth-password-input')).toBeInTheDocument();
@@ -41,7 +40,7 @@ describe('AuthModal', () => {
   });
 
   it('switches to register mode and shows extra fields', async () => {
-    render(() => <AuthModal onClose={onClose} />);
+    render(() => <AuthModal onClose={onClose}/>);
     fireEvent.click(screen.getByTestId('auth-tab-register'));
     await waitFor(() => {
       expect(screen.getByTestId('auth-name-input')).toBeInTheDocument();
@@ -51,7 +50,7 @@ describe('AuthModal', () => {
 
   it('calls login with email and password on sign in', async () => {
     mockLogin.mockResolvedValueOnce(undefined);
-    render(() => <AuthModal onClose={onClose} />);
+    render(() => <AuthModal onClose={onClose}/>);
 
     fireEvent.input(screen.getByTestId('auth-email-input'), {
       target: { value: 'test@example.com' },
@@ -69,7 +68,7 @@ describe('AuthModal', () => {
 
   it('shows error when login fails', async () => {
     mockLogin.mockRejectedValueOnce(new Error('Invalid credentials'));
-    render(() => <AuthModal onClose={onClose} />);
+    render(() => <AuthModal onClose={onClose}/>);
 
     fireEvent.input(screen.getByTestId('auth-email-input'), {
       target: { value: 'bad@example.com' },
@@ -86,7 +85,7 @@ describe('AuthModal', () => {
   });
 
   it('shows password mismatch error in register mode', async () => {
-    render(() => <AuthModal onClose={onClose} />);
+    render(() => <AuthModal onClose={onClose}/>);
     fireEvent.click(screen.getByTestId('auth-tab-register'));
 
     await waitFor(() => expect(screen.getByTestId('auth-confirm-input')).toBeInTheDocument());
@@ -111,7 +110,7 @@ describe('AuthModal', () => {
 
   it('calls register with all fields on successful registration', async () => {
     mockRegister.mockResolvedValueOnce(undefined);
-    render(() => <AuthModal onClose={onClose} />);
+    render(() => <AuthModal onClose={onClose}/>);
     fireEvent.click(screen.getByTestId('auth-tab-register'));
 
     await waitFor(() => expect(screen.getByTestId('auth-name-input')).toBeInTheDocument());
@@ -131,24 +130,19 @@ describe('AuthModal', () => {
     fireEvent.click(screen.getByTestId('auth-submit'));
 
     await waitFor(() => {
-      expect(mockRegister).toHaveBeenCalledWith(
-        'max@example.com',
-        'securepass123',
-        'securepass123',
-        'Max Mustermann',
-      );
+      expect(mockRegister).toHaveBeenCalledWith('max@example.com', 'securepass123', 'securepass123', 'Max Mustermann');
       expect(onClose).toHaveBeenCalled();
     });
   });
 
   it('closes when clicking the backdrop', () => {
-    render(() => <AuthModal onClose={onClose} />);
+    render(() => <AuthModal onClose={onClose}/>);
     fireEvent.click(screen.getByTestId('auth-modal-backdrop'));
     expect(onClose).toHaveBeenCalled();
   });
 
   it('closes when clicking the X button', () => {
-    render(() => <AuthModal onClose={onClose} />);
+    render(() => <AuthModal onClose={onClose}/>);
     fireEvent.click(screen.getByTestId('auth-modal-close'));
     expect(onClose).toHaveBeenCalled();
   });

@@ -9,12 +9,12 @@
  * - flyToCity: stops idle, flies to city, resumes idle after IDLE_RESUME_DELAY.
  * - Provides MapContext to child components.
  */
-import { Component, JSX, createSignal, onMount, onCleanup } from 'solid-js';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { Component, createSignal, JSX, onCleanup, onMount } from 'solid-js';
+import { CITIES } from '~/data/cities';
 
 import { MapContext, type MapContextValue } from './MapContext';
-import { CITIES } from '~/data/cities';
 
 // ─── Map style ─────────────────────────────────────────────────────────────
 
@@ -59,8 +59,7 @@ const GlobeMap: Component<GlobeMapProps> = (props) => {
   // ── Idle animation ────────────────────────────────────────────────────
 
   function startIdle() {
-    const m = mapRef;
-    if (!m || idleActive) return;
+    if (!mapRef || idleActive) return;
 
     idleActive = true;
     setIsIdle(true);
@@ -89,24 +88,14 @@ const GlobeMap: Component<GlobeMapProps> = (props) => {
     flyToCoords(city.center, city.zoom, offset);
   }
 
-  function flyToCoords(
-    center: [number, number],
-    zoom: number,
-    offset?: [number, number],
-  ) {
+  function flyToCoords(center: [number, number], zoom: number, offset?: [number, number]) {
     const m = mapRef;
     if (!m) return;
 
     stopIdle();
 
     m.flyTo({
-      center,
-      zoom,
-      bearing: 0,
-      pitch: 0,
-      offset: offset ?? [0, 0],
-      duration: 2200,
-      essential: true,
+      center, zoom, bearing: 0, pitch: 0, offset: offset ?? [0, 0], duration: 2200, essential: true,
     });
 
     idleResumeTimeoutId = setTimeout(startIdle, IDLE_RESUME_DELAY);
@@ -181,24 +170,17 @@ const GlobeMap: Component<GlobeMapProps> = (props) => {
   // ── Context ───────────────────────────────────────────────────────────
 
   const contextValue: MapContextValue = {
-    map: mapInstance,
-    flyToCity,
-    flyToCoords,
-    isIdle,
-    stopIdle,
-    startIdle,
+    map: mapInstance, flyToCity, flyToCoords, isIdle, stopIdle, startIdle,
   };
 
-  return (
-    <MapContext.Provider value={contextValue}>
+  return (<MapContext.Provider value={contextValue}>
       <div
         ref={containerRef}
         data-testid="globe-map-container"
         style={{ position: 'fixed', inset: '0', 'z-index': '0' }}
       />
       {props.children}
-    </MapContext.Provider>
-  );
+    </MapContext.Provider>);
 };
 
 export default GlobeMap;

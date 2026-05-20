@@ -1,5 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@solidjs/testing-library';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useMap } from '~/components/map';
+import GlobeMap from '../src/components/map/GlobeMap';
 
 // ─── Mock maplibre-gl ──────────────────────────────────────────────────────
 
@@ -16,10 +18,7 @@ vi.mock('maplibre-gl', () => {
       return instance;
     }),
 
-    flyTo: vi.fn(),
-    easeTo: vi.fn(),
-    stop: vi.fn(),
-    remove: vi.fn(),
+    flyTo: vi.fn(), easeTo: vi.fn(), stop: vi.fn(), remove: vi.fn(),
 
     touchZoomRotate: {
       disableRotation: vi.fn(),
@@ -32,39 +31,27 @@ vi.mock('maplibre-gl', () => {
 
   return {
     default: {
-      Map: MockMap,
-      _mockInstance: instance,
+      Map: MockMap, _mockInstance: instance,
     },
   };
 });
 
 vi.mock('maplibre-gl/dist/maplibre-gl.css', () => ({}));
 
-import GlobeMap from '../src/components/map/GlobeMap';
-import { useMap } from '~/components/map';
-
 function makeMockStyle() {
   return {
-    version: 8,
-    name: 'Mock OpenFreeMap Liberty',
-    sources: {
+    version: 8, name: 'Mock OpenFreeMap Liberty', sources: {
       openmaptiles: {
-        type: 'vector',
-        url: 'https://tiles.openfreemap.org/planet',
+        type: 'vector', url: 'https://tiles.openfreemap.org/planet',
       },
-    },
-    layers: [],
+    }, layers: [],
   };
 }
 
 function mockStyleFetch() {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn().mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue(makeMockStyle()),
-    }),
-  );
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true, json: vi.fn().mockResolvedValue(makeMockStyle()),
+  }));
 }
 
 async function flushAsyncMapSetup() {
@@ -130,22 +117,20 @@ afterEach(async () => {
 
 describe('GlobeMap — rendering', () => {
   it('renders the map container div', () => {
-    render(() => <GlobeMap />);
+    render(() => <GlobeMap/>);
     expect(screen.getByTestId('globe-map-container')).toBeInTheDocument();
   });
 
   it('renders children', () => {
-    render(() => (
-      <GlobeMap>
-        <div data-testid="child" />
-      </GlobeMap>
-    ));
+    render(() => (<GlobeMap>
+        <div data-testid="child"/>
+      </GlobeMap>));
 
     expect(screen.getByTestId('child')).toBeInTheDocument();
   });
 
   it('container is fixed, z-index 0', () => {
-    render(() => <GlobeMap />);
+    render(() => <GlobeMap/>);
 
     const el = screen.getByTestId('globe-map-container');
 
@@ -154,7 +139,7 @@ describe('GlobeMap — rendering', () => {
   });
 
   it('registers load event', async () => {
-    render(() => <GlobeMap />);
+    render(() => <GlobeMap/>);
 
     await flushAsyncMapSetup();
 
@@ -172,14 +157,12 @@ describe('GlobeMap — idle animation', () => {
 
     const Consumer = () => {
       isIdle = useMap().isIdle;
-      return <div />;
+      return <div/>;
     };
 
-    render(() => (
-      <GlobeMap>
-        <Consumer />
-      </GlobeMap>
-    ));
+    render(() => (<GlobeMap>
+        <Consumer/>
+      </GlobeMap>));
 
     await triggerMapLoad();
 
@@ -187,7 +170,7 @@ describe('GlobeMap — idle animation', () => {
   });
 
   it('disables touch rotation after load', async () => {
-    render(() => <GlobeMap />);
+    render(() => <GlobeMap/>);
 
     const m = await triggerMapLoad();
 
@@ -203,14 +186,12 @@ describe('GlobeMap — flyToCity', () => {
 
     const Consumer = () => {
       flyToCity = useMap().flyToCity;
-      return <div />;
+      return <div/>;
     };
 
-    render(() => (
-      <GlobeMap>
-        <Consumer />
-      </GlobeMap>
-    ));
+    render(() => (<GlobeMap>
+        <Consumer/>
+      </GlobeMap>));
 
     await triggerMapLoad();
 
@@ -224,13 +205,9 @@ describe('GlobeMap — flyToCity', () => {
 
     const m = await getMock();
 
-    expect(m.flyTo).toHaveBeenCalledWith(
-      expect.objectContaining({
-        center: [11.582, 48.1351],
-        zoom: 9,
-        essential: true,
-      }),
-    );
+    expect(m.flyTo).toHaveBeenCalledWith(expect.objectContaining({
+      center: [11.582, 48.1351], zoom: 9, essential: true,
+    }));
   });
 
   it('flies to Berlin with correct coords', async () => {
@@ -240,11 +217,9 @@ describe('GlobeMap — flyToCity', () => {
 
     const m = await getMock();
 
-    expect(m.flyTo).toHaveBeenCalledWith(
-      expect.objectContaining({
-        center: [13.405, 52.52],
-      }),
-    );
+    expect(m.flyTo).toHaveBeenCalledWith(expect.objectContaining({
+      center: [13.405, 52.52],
+    }));
   });
 
   it('flies to Karlsruhe with correct coords', async () => {
@@ -254,12 +229,9 @@ describe('GlobeMap — flyToCity', () => {
 
     const m = await getMock();
 
-    expect(m.flyTo).toHaveBeenCalledWith(
-      expect.objectContaining({
-        center: [8.4037, 49.0069],
-        zoom: 10,
-      }),
-    );
+    expect(m.flyTo).toHaveBeenCalledWith(expect.objectContaining({
+      center: [8.4037, 49.0069], zoom: 10,
+    }));
   });
 
   it('always uses bearing:0 and pitch:0', async () => {
@@ -269,12 +241,9 @@ describe('GlobeMap — flyToCity', () => {
 
     const m = await getMock();
 
-    expect(m.flyTo).toHaveBeenCalledWith(
-      expect.objectContaining({
-        bearing: 0,
-        pitch: 0,
-      }),
-    );
+    expect(m.flyTo).toHaveBeenCalledWith(expect.objectContaining({
+      bearing: 0, pitch: 0,
+    }));
   });
 
   it('passes pixel offset to flyTo', async () => {
@@ -284,11 +253,9 @@ describe('GlobeMap — flyToCity', () => {
 
     const m = await getMock();
 
-    expect(m.flyTo).toHaveBeenCalledWith(
-      expect.objectContaining({
-        offset: [150, -80],
-      }),
-    );
+    expect(m.flyTo).toHaveBeenCalledWith(expect.objectContaining({
+      offset: [150, -80],
+    }));
   });
 
   it('does NOT call flyTo for unknown city key', async () => {
@@ -306,14 +273,12 @@ describe('GlobeMap — flyToCity', () => {
 
     const Consumer = () => {
       flyToCoords = useMap().flyToCoords;
-      return <div />;
+      return <div/>;
     };
 
-    render(() => (
-      <GlobeMap>
-        <Consumer />
-      </GlobeMap>
-    ));
+    render(() => (<GlobeMap>
+        <Consumer/>
+      </GlobeMap>));
 
     await triggerMapLoad();
 
@@ -321,14 +286,9 @@ describe('GlobeMap — flyToCity', () => {
 
     const m = await getMock();
 
-    expect(m.flyTo).toHaveBeenCalledWith(
-      expect.objectContaining({
-        center: [9.182, 48.776],
-        zoom: 8,
-        offset: [100, -50],
-        bearing: 0,
-      }),
-    );
+    expect(m.flyTo).toHaveBeenCalledWith(expect.objectContaining({
+      center: [9.182, 48.776], zoom: 8, offset: [100, -50], bearing: 0,
+    }));
   });
 
   it('calls m.stop() to cancel idle pan before flying', async () => {

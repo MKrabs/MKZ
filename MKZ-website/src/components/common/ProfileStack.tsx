@@ -19,24 +19,22 @@ const ProfileStack: Component<ProfileStackProps> = (props) => {
   const visible = () => props.players.slice(0, maxVisible());
   const remaining = () => props.players.length - maxVisible();
 
-  return (
-    <div class="flex items-center -space-x-2" data-testid="profile-stack">
+  return (<div class="flex items-center -space-x-2" data-testid="profile-stack">
       <For each={visible()}>
-        {(player) => (
-          <ProfileAvatar
+        {(player) => (<ProfileAvatar
             name={player.name}
             imageUrl={player.imageUrl}
             size="sm"
-          />
-        )}
+          />)}
       </For>
       <Show when={remaining() > 0}>
-        <div class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs font-semibold text-gray-600" data-testid="profile-stack-remaining">
+        <div
+          class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs font-semibold text-gray-600"
+          data-testid="profile-stack-remaining">
           +{remaining()}
         </div>
       </Show>
-    </div>
-  );
+    </div>);
 };
 
 export default ProfileStack;

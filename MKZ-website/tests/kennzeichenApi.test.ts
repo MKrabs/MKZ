@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { lookupCode } from '~/api/kennzeichen';
 
 // ─── Persistent PocketBase mock ─────────────────────────────────────────────
 // Each collection name maps to a SINGLE shared object so test setup and
@@ -7,11 +8,7 @@ const _colMocks: Record<string, ReturnType<typeof makeMockCol>> = {};
 
 function makeMockCol() {
   return {
-    getFirstListItem: vi.fn(),
-    create: vi.fn(),
-    delete: vi.fn(),
-    getList: vi.fn(),
-    authWithPassword: vi.fn(),
+    getFirstListItem: vi.fn(), create: vi.fn(), delete: vi.fn(), getList: vi.fn(), authWithPassword: vi.fn(),
   };
 }
 
@@ -20,20 +17,14 @@ vi.mock('../src/lib/pb', () => ({
     collection: vi.fn((name: string) => {
       if (!_colMocks[name]) _colMocks[name] = makeMockCol();
       return _colMocks[name];
-    }),
-    authStore: { model: null, isValid: false, onChange: vi.fn(), clear: vi.fn() },
-    autoCancellation: vi.fn(),
+    }), authStore: { model: null, isValid: false, onChange: vi.fn(), clear: vi.fn() }, autoCancellation: vi.fn(),
   },
 }));
-
-import { lookupCode } from '~/api/kennzeichen';
 
 describe('kennzeichen API', () => {
   beforeEach(() => {
     // Clear call history but keep implementations
-    Object.values(_colMocks).forEach((col) =>
-      Object.values(col).forEach((fn) => (fn as ReturnType<typeof vi.fn>).mockClear()),
-    );
+    Object.values(_colMocks).forEach((col) => Object.values(col).forEach((fn) => (fn as ReturnType<typeof vi.fn>).mockClear()));
   });
 
   it('returns a record on a valid code', async () => {
@@ -81,9 +72,7 @@ describe('kennzeichen API', () => {
 
   it('returns null on network error', async () => {
     _colMocks['kennzeichen'] ??= makeMockCol();
-    _colMocks['kennzeichen'].getFirstListItem.mockRejectedValueOnce(
-      new TypeError('Failed to fetch'),
-    );
+    _colMocks['kennzeichen'].getFirstListItem.mockRejectedValueOnce(new TypeError('Failed to fetch'));
 
     const result = await lookupCode('B');
     expect(result).toBeNull();

@@ -7,20 +7,18 @@
  * - seen entries can have an image field
  * - UI has 3 states: new / seen-no-photo / seen-with-photo
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@solidjs/testing-library';
+import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MapContext, type MapContextValue } from '~/components/map';
+import PlateSubmission from '../src/components/features/PlateSubmission';
 
 // ─── PB mock ─────────────────────────────────────────────────────────────────
 const _colMocks: Record<string, any> = {};
+
 function col(name: string) {
   if (!_colMocks[name]) {
     _colMocks[name] = {
-      getFirstListItem: vi.fn(),
-      create: vi.fn(),
-      delete: vi.fn(),
-      getList: vi.fn(),
-      update: vi.fn(),
+      getFirstListItem: vi.fn(), create: vi.fn(), delete: vi.fn(), getList: vi.fn(), update: vi.fn(),
     };
   }
   return _colMocks[name];
@@ -38,9 +36,10 @@ vi.mock('../src/lib/pb', () => ({
 vi.mock('../src/api/kennzeichen', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../src/api/kennzeichen')>();
   return {
-    ...actual,
-    fetchGeoRegions: vi.fn().mockResolvedValue([{
-      id: 'geo1', ags: '08212', gen: 'Karlsruhe',
+    ...actual, fetchGeoRegions: vi.fn().mockResolvedValue([{
+      id: 'geo1',
+      ags: '08212',
+      gen: 'Karlsruhe',
       low: { type: 'Polygon', coordinates: [[[8.3, 48.9], [8.5, 48.9], [8.5, 49.1], [8.3, 49.1], [8.3, 48.9]]] },
       high: null,
     }]),
@@ -50,28 +49,27 @@ vi.mock('../src/api/kennzeichen', async (importOriginal) => {
 // ─── Auth mock ────────────────────────────────────────────────────────────────
 let mockUser: any = null;
 vi.mock('../src/store/auth', () => ({
-  user: () => mockUser,
-  setUser: vi.fn(), login: vi.fn(), register: vi.fn(), logout: vi.fn(),
+  user: () => mockUser, setUser: vi.fn(), login: vi.fn(), register: vi.fn(), logout: vi.fn(),
 }));
 
 // ─── Map mock ─────────────────────────────────────────────────────────────────
 const mockFlyToCoords = vi.fn();
+
 function makeCtx(overrides: Partial<MapContextValue> = {}): MapContextValue {
   return {
-    map: () => null, flyToCity: vi.fn(), flyToCoords: mockFlyToCoords,
-    isIdle: () => false, stopIdle: vi.fn(), startIdle: vi.fn(),
-    ...overrides,
+    map: () => null,
+    flyToCity: vi.fn(),
+    flyToCoords: mockFlyToCoords,
+    isIdle: () => false,
+    stopIdle: vi.fn(),
+    startIdle: vi.fn(), ...overrides,
   };
 }
 
-import PlateSubmission from '../src/components/features/PlateSubmission';
-
 function renderPS(ctx?: Partial<MapContextValue>) {
-  return render(() => (
-    <MapContext.Provider value={makeCtx(ctx)}>
-      <PlateSubmission />
-    </MapContext.Provider>
-  ));
+  return render(() => (<MapContext.Provider value={makeCtx(ctx)}>
+      <PlateSubmission/>
+    </MapContext.Provider>));
 }
 
 function typeInPlate(text: string) {
@@ -100,9 +98,7 @@ describe('PlateSubmission — anonymous', () => {
   beforeEach(() => {
     mockUser = null;
     vi.useFakeTimers();
-    Object.values(_colMocks).forEach((c: any) =>
-      Object.values(c).forEach((fn: any) => fn.mockReset?.()),
-    );
+    Object.values(_colMocks).forEach((c: any) => Object.values(c).forEach((fn: any) => fn.mockReset?.()));
     mockFlyToCoords.mockClear();
   });
   afterEach(() => vi.useRealTimers());
@@ -114,7 +110,9 @@ describe('PlateSubmission — anonymous', () => {
     renderPS();
     typeInPlate('KA NR 355');
     await vi.advanceTimersByTimeAsync(450);
-    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(screen.getByTestId('region-info')).toBeInTheDocument();
     expect(screen.getByTestId('preview-region-badge')).toBeInTheDocument();
@@ -127,7 +125,9 @@ describe('PlateSubmission — anonymous', () => {
     renderPS();
     typeInPlate('KA NR 355');
     await vi.advanceTimersByTimeAsync(450);
-    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(screen.getByTestId('sign-in-to-collect')).toBeInTheDocument();
     expect(screen.queryByTestId('mark-seen-btn')).toBeNull();
@@ -140,7 +140,9 @@ describe('PlateSubmission — anonymous', () => {
     renderPS();
     typeInPlate('KA NR 355');
     await vi.advanceTimersByTimeAsync(450);
-    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
 
     // The whimsical nudge component must be present
     expect(screen.getByTestId('login-nudge')).toBeInTheDocument();
@@ -158,12 +160,12 @@ describe('PlateSubmission — anonymous', () => {
     renderPS();
     typeInPlate('KA NR 355');
     await vi.advanceTimersByTimeAsync(450);
-    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
 
     // seen check must include the full uppercased text
-    expect(col('seen_plates').getFirstListItem).toHaveBeenCalledWith(
-      expect.stringContaining('plate_text = "KA NR 355"'),
-    );
+    expect(col('seen_plates').getFirstListItem).toHaveBeenCalledWith(expect.stringContaining('plate_text = "KA NR 355"'));
   });
 
   it('does not re-pan for same prefix when only text changes (requires auth)', async () => {
@@ -174,7 +176,9 @@ describe('PlateSubmission — anonymous', () => {
     renderPS();
     typeInPlate('KA NR 355');
     await vi.advanceTimersByTimeAsync(450);
-    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
 
     // First type: should pan
     expect(mockFlyToCoords).toHaveBeenCalledTimes(1);
@@ -184,14 +188,14 @@ describe('PlateSubmission — anonymous', () => {
     col('seen_plates').getFirstListItem.mockRejectedValueOnce(new Error('nf'));
     typeInPlate('KA NR 356');
     await vi.advanceTimersByTimeAsync(450);
-    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
 
     // Same prefix → no second pan
     expect(mockFlyToCoords).not.toHaveBeenCalled();
     // But seen_plates was queried again with new text
-    expect(col('seen_plates').getFirstListItem).toHaveBeenCalledWith(
-      expect.stringContaining('plate_text = "KA NR 356"'),
-    );
+    expect(col('seen_plates').getFirstListItem).toHaveBeenCalledWith(expect.stringContaining('plate_text = "KA NR 356"'));
   });
 });
 
@@ -200,19 +204,26 @@ describe('PlateSubmission — anonymous', () => {
 describe('PlateSubmission — logged-in', () => {
   beforeEach(() => {
     mockUser = { id: 'user123', name: 'Max', email: 'max@test.com' };
-    Object.values(_colMocks).forEach((c: any) =>
-      Object.values(c).forEach((fn: any) => fn.mockReset?.()),
-    );
+    Object.values(_colMocks).forEach((c: any) => Object.values(c).forEach((fn: any) => fn.mockReset?.()));
     mockFlyToCoords.mockClear();
   });
 
   async function setup(plate: string, seenMock: 'new' | 'no-photo' | 'with-photo') {
-    const seenRecord =
-      seenMock === 'new'
-        ? null
-        : seenMock === 'no-photo'
-        ? { id: 'sp1', user: 'user123', kennzeichen: 'kz-ka-001', plate_text: 'KA NR 355', image: '', noted_at: '2026-05-17' }
-        : { id: 'sp1', user: 'user123', kennzeichen: 'kz-ka-001', plate_text: 'KA NR 355', image: 'photo.jpg', noted_at: '2026-05-17' };
+    const seenRecord = seenMock === 'new' ? null : seenMock === 'no-photo' ? {
+      id: 'sp1',
+      user: 'user123',
+      kennzeichen: 'kz-ka-001',
+      plate_text: 'KA NR 355',
+      image: '',
+      noted_at: '2026-05-17',
+    } : {
+      id: 'sp1',
+      user: 'user123',
+      kennzeichen: 'kz-ka-001',
+      plate_text: 'KA NR 355',
+      image: 'photo.jpg',
+      noted_at: '2026-05-17',
+    };
 
     col('kennzeichen').getFirstListItem.mockResolvedValueOnce(KA_KZ);
     if (seenRecord) {
@@ -243,9 +254,10 @@ describe('PlateSubmission — logged-in', () => {
     fireEvent.click(screen.getByTestId('mark-seen-btn'));
 
     await waitFor(() => {
-      expect(col('seen_plates').create).toHaveBeenCalledWith(
-        expect.objectContaining({ kennzeichen: 'kz-ka-001', plate_text: 'KA NR 355' }),
-      );
+      expect(col('seen_plates').create).toHaveBeenCalledWith(expect.objectContaining({
+        kennzeichen: 'kz-ka-001',
+        plate_text: 'KA NR 355',
+      }));
     }, TIMEOUT);
   });
 

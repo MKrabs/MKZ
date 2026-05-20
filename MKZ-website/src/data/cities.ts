@@ -13,22 +13,11 @@ export interface City {
 
 export const CITIES: Record<string, City> = {
   berlin: {
-    key: 'berlin',
-    name: 'Berlin',
-    center: [13.405, 52.52],
-    zoom: 9,
-  },
-  munich: {
-    key: 'munich',
-    name: 'München',
-    center: [11.582, 48.1351],
-    zoom: 9,
-  },
-  karlsruhe: {
-    key: 'karlsruhe',
-    name: 'Karlsruhe',
-    center: [8.4037, 49.0069],
-    zoom: 10,
+    key: 'berlin', name: 'Berlin', center: [13.405, 52.52], zoom: 9,
+  }, munich: {
+    key: 'munich', name: 'München', center: [11.582, 48.1351], zoom: 9,
+  }, karlsruhe: {
+    key: 'karlsruhe', name: 'Karlsruhe', center: [8.4037, 49.0069], zoom: 10,
   },
 } as const;
 

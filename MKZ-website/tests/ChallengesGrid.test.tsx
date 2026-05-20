@@ -1,41 +1,41 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@solidjs/testing-library';
+import { fireEvent, render, screen } from '@solidjs/testing-library';
+import { describe, expect, it } from 'vitest';
 import ChallengesGrid from '../src/components/features/ChallengesGrid';
 
 describe('ChallengesGrid', () => {
   it('renders the challenges section', () => {
-    render(() => <ChallengesGrid />);
+    render(() => <ChallengesGrid/>);
     expect(screen.getByTestId('challenges-grid')).toBeInTheDocument();
     expect(screen.getByText(/Your Challenges/i)).toBeInTheDocument();
   });
 
   it('renders challenge cards', () => {
-    render(() => <ChallengesGrid />);
+    render(() => <ChallengesGrid/>);
     const cards = screen.getAllByTestId('challenge-card');
     expect(cards.length).toBeGreaterThan(0);
   });
 
   it('shows challenge names', () => {
-    render(() => <ChallengesGrid />);
+    render(() => <ChallengesGrid/>);
     expect(screen.getByText('Germany / Regions')).toBeInTheDocument();
     expect(screen.getByText('Rarest Plate of the Week')).toBeInTheDocument();
   });
 
   it('shows progress previews', () => {
-    render(() => <ChallengesGrid />);
+    render(() => <ChallengesGrid/>);
     const previews = screen.getAllByTestId('progress-preview');
     expect(previews.length).toBeGreaterThan(0);
   });
 
   it('expands challenge on click', async () => {
-    render(() => <ChallengesGrid />);
+    render(() => <ChallengesGrid/>);
     const cards = screen.getAllByTestId('challenge-card');
     await fireEvent.click(cards[0].querySelector('button')!);
     expect(screen.getByTestId('challenge-expanded')).toBeInTheDocument();
   });
 
   it('collapses challenge on second click', async () => {
-    render(() => <ChallengesGrid />);
+    render(() => <ChallengesGrid/>);
     const cards = screen.getAllByTestId('challenge-card');
     await fireEvent.click(cards[0].querySelector('button')!);
     expect(screen.getByTestId('challenge-expanded')).toBeInTheDocument();
@@ -44,7 +44,7 @@ describe('ChallengesGrid', () => {
   });
 
   it('shows profile stacks with participant count', () => {
-    render(() => <ChallengesGrid />);
+    render(() => <ChallengesGrid/>);
     const stacks = screen.getAllByTestId('profile-stack');
     expect(stacks.length).toBeGreaterThan(0);
   });

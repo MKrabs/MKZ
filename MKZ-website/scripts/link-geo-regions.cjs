@@ -2,21 +2,25 @@
 // MKZ-website/scripts/link-geo-regions.cjs
 'use strict';
 
-const fs   = require('fs');
+const fs = require('fs');
 const path = require('path');
 
 const args = process.argv.slice(2);
+
 function getArg(flag) {
   const i = args.indexOf(flag);
-  return i !== -1 ? args[i + 1] : null;
+  return i !== -1
+         ? args[i + 1]
+         : null;
 }
+
 const isDry = args.includes('--dry');
 
-const pbUrl    = getArg('--url')   ?? 'http://localhost:8090';
-const email    = getArg('--email') ?? process.env.SUPERUSER_EMAIL ?? '';
-const pass     = getArg('--pass')  ?? process.env.SUPERUSER_PASS  ?? '';
+const pbUrl = getArg('--url') ?? 'http://localhost:8090';
+const email = getArg('--email') ?? process.env.SUPERUSER_EMAIL ?? '';
+const pass = getArg('--pass') ?? process.env.SUPERUSER_PASS ?? '';
 const repoRoot = path.resolve(__dirname, '..', '..');
-const outDir   = getArg('--out')   ?? path.join(repoRoot, 'MKZ-pocketbase/migrations');
+const outDir = getArg('--out') ?? path.join(repoRoot, 'MKZ-pocketbase/migrations');
 
 const TS_LINK = 1747500004;
 
@@ -29,49 +33,49 @@ if (!email || !pass) {
 // ─── Manual overrides ────────────────────────────────────────────────────────
 
 const MANUAL_OVERRIDES = {
-  'A':   ['Augsburg', 'Augsburg, Landkreis'],
-  'AB':  ['Aschaffenburg', 'Aschaffenburg, Landkreis'],
-  'AN':  ['Ansbach', 'Ansbach, Landkreis'],
-  'BA':  ['Bamberg', 'Bamberg, Landkreis'],
-  'BT':  ['Bayreuth', 'Bayreuth, Landkreis'],
-  'CO':  ['Coburg', 'Coburg, Landkreis'],
-  'FÜ':  ['Fürth', 'Fürth, Landkreis'],
-  'HN':  ['Heilbronn', 'Heilbronn, Landkreis'],
-  'HO':  ['Hof', 'Hof, Landkreis'],
-  'KA':  ['Karlsruhe', 'Karlsruhe, Landkreis'],
-  'KL':  ['Kaiserslautern', 'Kaiserslautern, Landkreis'],
-  'KS':  ['Kassel', 'Kassel, Landkreis'],
-  'LA':  ['Landshut', 'Landshut, Landkreis'],
-  'M':   ['München', 'München, Landkreis'],
-  'OL':  ['Oldenburg (Oldb)', 'Oldenburg, Landkreis'],
-  'OS':  ['Osnabrück', 'Osnabrück, Landkreis'],
-  'PA':  ['Passau', 'Passau, Landkreis'],
-  'R':   ['Regensburg', 'Regensburg, Landkreis'],
-  'RO':  ['Rosenheim', 'Rosenheim, Landkreis'],
-  'SW':  ['Schweinfurt', 'Schweinfurt, Landkreis'],
-  'WÜ':  ['Würzburg', 'Würzburg, Landkreis'],
-  'AC':  ['Städteregion Aachen'],
-  'BR':  ['Karlsruhe, Landkreis'],
+  'A': ['Augsburg', 'Augsburg, Landkreis'],
+  'AB': ['Aschaffenburg', 'Aschaffenburg, Landkreis'],
+  'AN': ['Ansbach', 'Ansbach, Landkreis'],
+  'BA': ['Bamberg', 'Bamberg, Landkreis'],
+  'BT': ['Bayreuth', 'Bayreuth, Landkreis'],
+  'CO': ['Coburg', 'Coburg, Landkreis'],
+  'FÜ': ['Fürth', 'Fürth, Landkreis'],
+  'HN': ['Heilbronn', 'Heilbronn, Landkreis'],
+  'HO': ['Hof', 'Hof, Landkreis'],
+  'KA': ['Karlsruhe', 'Karlsruhe, Landkreis'],
+  'KL': ['Kaiserslautern', 'Kaiserslautern, Landkreis'],
+  'KS': ['Kassel', 'Kassel, Landkreis'],
+  'LA': ['Landshut', 'Landshut, Landkreis'],
+  'M': ['München', 'München, Landkreis'],
+  'OL': ['Oldenburg (Oldb)', 'Oldenburg, Landkreis'],
+  'OS': ['Osnabrück', 'Osnabrück, Landkreis'],
+  'PA': ['Passau', 'Passau, Landkreis'],
+  'R': ['Regensburg', 'Regensburg, Landkreis'],
+  'RO': ['Rosenheim', 'Rosenheim, Landkreis'],
+  'SW': ['Schweinfurt', 'Schweinfurt, Landkreis'],
+  'WÜ': ['Würzburg', 'Würzburg, Landkreis'],
+  'AC': ['Städteregion Aachen'],
+  'BR': ['Karlsruhe, Landkreis'],
   'BRB': ['Brandenburg an der Havel'],
   'BÜS': ['Konstanz'],
   'DLG': ['Dillingen a.d.Donau'],
-  'F':   ['Frankfurt am Main'],
-  'GÜ':  ['Rostock, Landkreis'],
-  'H':   ['Region Hannover'],
+  'F': ['Frankfurt am Main'],
+  'GÜ': ['Rostock, Landkreis'],
+  'H': ['Region Hannover'],
   'HRO': ['Rostock'],
-  'L':   ['Leipzig'],
+  'L': ['Leipzig'],
   'MAK': ['Wunsiedel i.Fichtelgebirge'],
-  'MU':  ['München, Landkreis'],
+  'MU': ['München, Landkreis'],
   'MUC': ['München'],
-  'MÜ':  ['Mühldorf a.Inn'],
+  'MÜ': ['Mühldorf a.Inn'],
   'NEA': ['Neustadt a.d.Aisch-Bad Windsheim'],
   'NEW': ['Neustadt a.d.Waldnaab'],
-  'NK':  ['Neunkirchen'],
-  'NM':  ['Neumarkt i.d.OPf.'],
+  'NK': ['Neunkirchen'],
+  'NM': ['Neumarkt i.d.OPf.'],
   'PAF': ['Pfaffenhofen a.d.Ilm'],
-  'SB':  ['Regionalverband Saarbrücken'],
-  'TR':  ['Trier', 'Trier-Saarburg'],
-  'VK':  ['Regionalverband Saarbrücken'],
+  'SB': ['Regionalverband Saarbrücken'],
+  'TR': ['Trier', 'Trier-Saarburg'],
+  'VK': ['Regionalverband Saarbrücken'],
   'VOH': ['Neustadt a.d.Waldnaab'],
   'WEN': ['Weiden i.d.OPf.'],
   'WUN': ['Wunsiedel i.Fichtelgebirge'],
@@ -79,31 +83,31 @@ const MANUAL_OVERRIDES = {
   'HST': ['Vorpommern-Rügen'],
   'HWI': ['Nordwestmecklenburg'],
   'IGB': ['Saarpfalz-Kreis'],
-  'NB':  ['Mecklenburgische Seenplatte'],
+  'NB': ['Mecklenburgische Seenplatte'],
   'NEC': ['Coburg', 'Coburg, Landkreis'],
   'AIB': ['München, Landkreis', 'Rosenheim, Landkreis'],
-  'BH':  ['Ortenaukreis', 'Rastatt'],
-  'BK':  ['Rems-Murr-Kreis', 'Schwäbisch Hall'],
+  'BH': ['Ortenaukreis', 'Rastatt'],
+  'BK': ['Rems-Murr-Kreis', 'Schwäbisch Hall'],
   'BUL': ['Amberg-Sulzbach', 'Schwandorf'],
   'EBS': ['Bayreuth, Landkreis', 'Forchheim', 'Kulmbach'],
   'ESB': ['Amberg-Sulzbach', 'Bayreuth, Landkreis', 'Neustadt a.d.Waldnaab', 'Nürnberger Land'],
   'GEO': ['Haßberge', 'Schweinfurt, Landkreis'],
   'HCH': ['Freudenstadt', 'Zollernalbkreis'],
-  'HD':  ['Heidelberg', 'Rhein-Neckar-Kreis'],
-  'HU':  ['Main-Kinzig-Kreis'],
+  'HD': ['Heidelberg', 'Rhein-Neckar-Kreis'],
+  'HU': ['Main-Kinzig-Kreis'],
   'KEM': ['Bayreuth, Landkreis', 'Tirschenreuth'],
-  'LF':  ['Altötting', 'Berchtesgadener Land', 'Traunstein'],
-  'LH':  ['Coesfeld', 'Unna'],
+  'LF': ['Altötting', 'Berchtesgadener Land', 'Traunstein'],
+  'LH': ['Coesfeld', 'Unna'],
   'MAI': ['Kelheim', 'Landshut, Landkreis'],
   'MAL': ['Landshut, Landkreis', 'Straubing-Bogen'],
   'MON': ['Städteregion Aachen', 'Düren'],
   'MÜB': ['Bayreuth, Landkreis', 'Hof, Landkreis'],
-  'N':   ['Nürnberg', 'Nürnberger Land'],
+  'N': ['Nürnberg', 'Nürnberger Land'],
   'NAB': ['Amberg-Sulzbach', 'Schwandorf'],
   'PAR': ['Kelheim', 'Neumarkt i.d.OPf.'],
   'PEG': ['Bayreuth, Landkreis', 'Forchheim', 'Nürnberger Land'],
-  'PF':  ['Pforzheim', 'Enzkreis'],
-  'PS':  ['Pirmasens', 'Südwestpfalz'],
+  'PF': ['Pforzheim', 'Enzkreis'],
+  'PS': ['Pirmasens', 'Südwestpfalz'],
   'REH': ['Hof, Landkreis', 'Wunsiedel i.Fichtelgebirge'],
   'ROD': ['Cham', 'Schwandorf'],
   'ROL': ['Kelheim', 'Landshut, Landkreis'],
@@ -112,20 +116,20 @@ const MANUAL_OVERRIDES = {
   'SEL': ['Wunsiedel i.Fichtelgebirge'],
   'SLE': ['Düren', 'Euskirchen'],
   'SLG': ['Ravensburg', 'Sigmaringen'],
-  'SR':  ['Straubing', 'Straubing-Bogen'],
+  'SR': ['Straubing', 'Straubing-Bogen'],
   'STO': ['Konstanz', 'Sigmaringen'],
   'UFF': ['Neustadt a.d.Aisch-Bad Windsheim'],
-  'UL':  ['Ulm', 'Alb-Donau-Kreis'],
+  'UL': ['Ulm', 'Alb-Donau-Kreis'],
   'VIB': ['Landshut, Landkreis', 'Mühldorf a.Inn', 'Rottal-Inn'],
   'WER': ['Augsburg, Landkreis', 'Dillingen a.d.Donau'],
   'WOL': ['Freudenstadt', 'Ortenaukreis'],
   'WOR': ['Bad Tölz-Wolfratshausen', 'München, Landkreis', 'Starnberg'],
-  'WS':  ['Mühldorf a.Inn', 'Rosenheim, Landkreis'],
-  'ZW':  ['Zweibrücken', 'Südwestpfalz'],
-  'ÜB':  ['Bodenseekreis', 'Ravensburg', 'Sigmaringen'],
-  'HH':  ['Hamburg'],
-  'HB':  ['Bremen', 'Bremerhaven'],
-  'HL':  ['Lübeck'],
+  'WS': ['Mühldorf a.Inn', 'Rosenheim, Landkreis'],
+  'ZW': ['Zweibrücken', 'Südwestpfalz'],
+  'ÜB': ['Bodenseekreis', 'Ravensburg', 'Sigmaringen'],
+  'HH': ['Hamburg'],
+  'HB': ['Bremen', 'Bremerhaven'],
+  'HL': ['Lübeck'],
 };
 
 // ─── Normalize ────────────────────────────────────────────────────────────────
@@ -146,8 +150,7 @@ function normalize(str) {
 
 async function pbFetch(urlPath, opts = {}) {
   const res = await fetch(`${pbUrl}${urlPath}`, {
-    headers: { 'Content-Type': 'application/json', ...opts.headers },
-    ...opts,
+    headers: {'Content-Type': 'application/json', ...opts.headers}, ...opts,
   });
   if (!res.ok) {
     const body = await res.text();
@@ -159,8 +162,7 @@ async function pbFetch(urlPath, opts = {}) {
 async function authenticate() {
   console.log(`Authenticating as ${email}…`);
   const data = await pbFetch('/api/collections/_superusers/auth-with-password', {
-    method: 'POST',
-    body: JSON.stringify({ identity: email, password: pass }),
+    method: 'POST', body: JSON.stringify({identity: email, password: pass}),
   });
   console.log('✅ Authenticated');
   return data.token;
@@ -170,9 +172,9 @@ async function fetchAllRecords(token, collection, fields) {
   const results = [];
   let page = 1;
   while (true) {
-    const params = new URLSearchParams({ page: String(page), perPage: '200', fields, skipTotal: '1' });
+    const params = new URLSearchParams({page: String(page), perPage: '200', fields, skipTotal: '1'});
     const data = await pbFetch(`/api/collections/${collection}/records?${params}`, {
-      headers: { Authorization: token },
+      headers: {Authorization: token},
     });
     results.push(...data.items);
     if (data.items.length < 200) break;
@@ -194,8 +196,8 @@ async function fetchAllRecords(token, collection, fields) {
   const geoRegions = await fetchAllRecords(token, 'geo_regions', 'id,ags,gen');
   console.log(`  ${geoRegions.length} records`);
 
-  const geoByGen     = new Map();
-  const geoByNorm    = new Map();
+  const geoByGen = new Map();
+  const geoByNorm = new Map();
   const normConflict = new Set();
 
   for (const geo of geoRegions) {
@@ -206,7 +208,7 @@ async function fetchAllRecords(token, collection, fields) {
   }
 
   const junctions = [];
-  const skipped   = [];
+  const skipped = [];
   const unmatched = [];
 
   for (const kz of kennzeichen) {
@@ -215,15 +217,23 @@ async function fetchAllRecords(token, collection, fields) {
     if (code in MANUAL_OVERRIDES) {
       const gens = MANUAL_OVERRIDES[code];
       if (gens.length === 0) {
-        skipped.push({ code, name: kz.district_name });
+        skipped.push({code, name: kz.district_name});
         continue;
       }
       for (const gen of gens) {
         const geo = geoByGen.get(gen);
         if (geo) {
-          junctions.push({ kzId: kz.id, kzCode: code, kzName: kz.district_name, geoId: geo.id, geoGen: geo.gen, geoAgs: geo.ags, via: 'override' });
+          junctions.push({
+            kzId: kz.id,
+            kzCode: code,
+            kzName: kz.district_name,
+            geoId: geo.id,
+            geoGen: geo.gen,
+            geoAgs: geo.ags,
+            via: 'override'
+          });
         } else {
-          unmatched.push({ kzId: kz.id, kzCode: code, kzName: kz.district_name, norm: `[OVERRIDE NOT FOUND: "${gen}"]` });
+          unmatched.push({kzId: kz.id, kzCode: code, kzName: kz.district_name, norm: `[OVERRIDE NOT FOUND: "${gen}"]`});
         }
       }
       continue;
@@ -231,28 +241,54 @@ async function fetchAllRecords(token, collection, fields) {
 
     const exactGeo = geoByGen.get(kz.district_name);
     if (exactGeo) {
-      junctions.push({ kzId: kz.id, kzCode: code, kzName: kz.district_name, geoId: exactGeo.id, geoGen: exactGeo.gen, geoAgs: exactGeo.ags, via: 'exact' });
+      junctions.push({
+        kzId: kz.id,
+        kzCode: code,
+        kzName: kz.district_name,
+        geoId: exactGeo.id,
+        geoGen: exactGeo.gen,
+        geoAgs: exactGeo.ags,
+        via: 'exact'
+      });
       continue;
     }
 
     const norm = normalize(kz.district_name);
     if (!normConflict.has(norm) && geoByNorm.has(norm)) {
       const geo = geoByNorm.get(norm);
-      junctions.push({ kzId: kz.id, kzCode: code, kzName: kz.district_name, geoId: geo.id, geoGen: geo.gen, geoAgs: geo.ags, via: 'normalized' });
+      junctions.push({
+        kzId: kz.id,
+        kzCode: code,
+        kzName: kz.district_name,
+        geoId: geo.id,
+        geoGen: geo.gen,
+        geoAgs: geo.ags,
+        via: 'normalized'
+      });
       continue;
     }
 
     if (kz.district_name.includes(' / ')) {
       const firstPart = kz.district_name.split(' / ')[0].trim();
       const firstNorm = normalize(firstPart);
-      const geo = geoByGen.get(firstPart) ?? (!normConflict.has(firstNorm) ? geoByNorm.get(firstNorm) : undefined);
+      const geo = geoByGen.get(firstPart) ?? (!normConflict.has(firstNorm)
+                                              ? geoByNorm.get(firstNorm)
+                                              : undefined);
       if (geo) {
-        junctions.push({ kzId: kz.id, kzCode: code, kzName: kz.district_name, geoId: geo.id, geoGen: geo.gen, geoAgs: geo.ags, via: 'first-token' });
+        junctions.push({
+          kzId: kz.id,
+          kzCode: code,
+          kzName: kz.district_name,
+          geoId: geo.id,
+          geoGen: geo.gen,
+          geoAgs: geo.ags,
+          via: 'first-token'
+        });
         continue;
       }
     }
 
-    unmatched.push({ kzId: kz.id, kzCode: code, kzName: kz.district_name, norm });
+    unmatched.push({kzId: kz.id, kzCode: code, kzName: kz.district_name, norm});
   }
 
   const coveredKz = new Set(junctions.map(j => j.kzId)).size;
@@ -301,7 +337,7 @@ async function fetchAllRecords(token, collection, fields) {
   const existingGoFiles = fs.readdirSync(outDir).filter(f => f.endsWith('.go'));
   if (existingGoFiles.length > 0) {
     const sample = fs.readFileSync(path.join(outDir, existingGoFiles[0]), 'utf8');
-    const match  = sample.match(/^package\s+(\w+)/m);
+    const match = sample.match(/^package\s+(\w+)/m);
     if (match) packageName = match[1];
   }
 
@@ -309,9 +345,7 @@ async function fetchAllRecords(token, collection, fields) {
   // Database IDs are auto-generated per instance and differ between
   // local dev and production. kennzeichen.code and geo_regions.gen are
   // stable unique business keys that are identical on every instance.
-  const insertLines = junctions.map(j =>
-    `\t\t{"${j.kzCode}", "${j.geoGen}"}, // ${j.geoAgs} [${j.via}]`
-  ).join('\n');
+  const insertLines = junctions.map(j => `\t\t{"${j.kzCode}", "${j.geoGen}"}, // ${j.geoAgs} [${j.via}]`).join('\n');
 
   const migration = `package ${packageName}
 
@@ -381,7 +415,7 @@ ${insertLines}
 }
 `;
 
-  fs.mkdirSync(outDir, { recursive: true });
+  fs.mkdirSync(outDir, {recursive: true});
   const outFile = path.join(outDir, `${TS_LINK}_seed_kennzeichen_geo_regions.go`);
   fs.writeFileSync(outFile, migration, 'utf8');
   console.log(`\n✅ Written: ${outFile}`);

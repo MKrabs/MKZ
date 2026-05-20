@@ -2,48 +2,32 @@
  * PlateSubmission core tests — structural rendering and basic state.
  * Full integration tests (debounce, PB lookup, seen check) are in PlateSubmissionPB.test.tsx
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@solidjs/testing-library';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MapContext, type MapContextValue } from '~/components/map';
+import PlateSubmission from '../src/components/features/PlateSubmission';
 
 // ─── PB + auth mocks ──────────────────────────────────────────────────────────
 vi.mock('../src/lib/pb', () => ({
   default: {
     collection: vi.fn(() => ({
-      getFirstListItem: vi.fn().mockRejectedValue(new Error('nf')),
-      create: vi.fn(),
-      delete: vi.fn(),
-    })),
-    authStore: { model: null, isValid: false, onChange: vi.fn(), clear: vi.fn() },
-    autoCancellation: vi.fn(),
+      getFirstListItem: vi.fn().mockRejectedValue(new Error('nf')), create: vi.fn(), delete: vi.fn(),
+    })), authStore: { model: null, isValid: false, onChange: vi.fn(), clear: vi.fn() }, autoCancellation: vi.fn(),
   },
 }));
 
 vi.mock('../src/store/auth', () => ({
-  user: () => null,
-  setUser: vi.fn(),
-  login: vi.fn(),
-  register: vi.fn(),
-  logout: vi.fn(),
+  user: () => null, setUser: vi.fn(), login: vi.fn(), register: vi.fn(), logout: vi.fn(),
 }));
 
 const mockCtx: MapContextValue = {
-  map: () => null,
-  flyToCity: vi.fn(),
-  flyToCoords: vi.fn(),
-  isIdle: () => false,
-  stopIdle: vi.fn(),
-  startIdle: vi.fn(),
+  map: () => null, flyToCity: vi.fn(), flyToCoords: vi.fn(), isIdle: () => false, stopIdle: vi.fn(), startIdle: vi.fn(),
 };
 
-import PlateSubmission from '../src/components/features/PlateSubmission';
-
 function renderPS() {
-  return render(() => (
-    <MapContext.Provider value={mockCtx}>
-      <PlateSubmission />
-    </MapContext.Provider>
-  ));
+  return render(() => (<MapContext.Provider value={mockCtx}>
+      <PlateSubmission/>
+    </MapContext.Provider>));
 }
 
 describe('PlateSubmission', () => {

@@ -1,4 +1,4 @@
-import { Component, Show, createSignal } from 'solid-js';
+import { Component, createSignal, Show } from 'solid-js';
 
 interface ImagePreviewProps {
   src: string;
@@ -12,8 +12,7 @@ interface ImagePreviewProps {
 const ImagePreview: Component<ImagePreviewProps> = (props) => {
   const [showFull, setShowFull] = createSignal(false);
 
-  return (
-    <>
+  return (<>
       {/* Thumbnail */}
       <div class="relative inline-block group" data-testid="image-preview">
         <img
@@ -60,8 +59,7 @@ const ImagePreview: Component<ImagePreviewProps> = (props) => {
           </div>
         </div>
       </Show>
-    </>
-  );
+    </>);
 };
 
 export default ImagePreview;

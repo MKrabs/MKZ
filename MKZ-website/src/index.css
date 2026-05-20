@@ -1,129 +1,141 @@
 @import "tailwindcss";
 
 @font-face {
-  font-family: 'Abominable';
-  src: url('./assets/fonts/Abominable-Bold-fc.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
+    font-family: 'Abominable';
+    src: url('./assets/fonts/Abominable-Bold-fc.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
 }
 
 @font-face {
-  font-family: 'Abominable';
-  src: url('./assets/fonts/Abominable-Condensed-fc.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
+    font-family: 'Abominable';
+    src: url('./assets/fonts/Abominable-Condensed-fc.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
 }
 
 @theme {
-  --font-display: 'Abominable', sans-serif;
-  --color-plate-blue: #003399;
-  --color-plate-bg: #ffffff;
-  --color-plate-border: #000000;
-  --color-mkz-primary: #2563eb;
-  --color-mkz-secondary: #1e40af;
-  --color-mkz-accent: #f59e0b;
-  --color-mkz-bg: #f8fafc;
-  --color-mkz-card: #ffffff;
+    --font-display: 'Abominable', sans-serif;
+    --color-plate-blue: #003399;
+    --color-plate-bg: #ffffff;
+    --color-plate-border: #000000;
+    --color-mkz-primary: #2563eb;
+    --color-mkz-secondary: #1e40af;
+    --color-mkz-accent: #f59e0b;
+    --color-mkz-bg: #f8fafc;
+    --color-mkz-card: #ffffff;
 }
 
 /* ── Login Nudge: animated SVG arrow draw ─────────────────────────────────── */
 @keyframes draw-arrow {
-  to { stroke-dashoffset: 0; }
+    to {
+        stroke-dashoffset: 0;
+    }
 }
 
 @keyframes nudge-bob {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-4px); }
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-4px);
+    }
 }
 
 .draw-arrow {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: draw-arrow 0.9s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: draw-arrow 0.9s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards;
 }
 
 .nudge-bob {
-  animation: nudge-bob 1.1s ease-in-out 1.3s infinite;
+    animation: nudge-bob 1.1s ease-in-out 1.3s infinite;
 }
 
 /* Arrowhead: hidden until the draw animation finishes at 0.4s + 0.9s = 1.3s */
 @keyframes appear-after-draw {
-  to { opacity: 1; }
+    to {
+        opacity: 1;
+    }
 }
 
 .appear-after-draw {
-  opacity: 0;
-  animation: appear-after-draw 0.12s ease 1.3s forwards;
+    opacity: 0;
+    animation: appear-after-draw 0.12s ease 1.3s forwards;
 }
 
 /* ── Region Markers: plate signs on the map ───────────────────────────────── */
 .region-marker {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transition: transform 0.2s ease, filter 0.2s ease;
-  transform-origin: bottom center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.2s ease, filter 0.2s ease;
+    transform-origin: bottom center;
 }
 
 .region-marker.marker-raised {
-  transform: translateY(-6px) scale(1.15);
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
-  z-index: 10;
+    transform: translateY(-6px) scale(1.15);
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+    z-index: 10;
 }
 
 .marker-plate-sign {
-  background: #ffffff;
-  border: 2px solid #000000;
-  border-radius: 3px;
-  padding: 2px 5px;
-  font-family: monospace;
-  font-weight: 700;
-  font-size: 11px;
-  line-height: 1;
-  white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-  position: relative;
+    background: #ffffff;
+    border: 2px solid #000000;
+    border-radius: 3px;
+    padding: 2px 5px;
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 11px;
+    line-height: 1;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    position: relative;
 }
 
 .marker-plate-sign::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 4px;
-  background: #003399;
-  border-radius: 1px 0 0 1px;
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 4px;
+    background: #003399;
+    border-radius: 1px 0 0 1px;
 }
 
 .marker-stick {
-  width: 2px;
-  height: 12px;
-  background: #555;
-  border-radius: 0 0 1px 1px;
+    width: 2px;
+    height: 12px;
+    background: #555;
+    border-radius: 0 0 1px 1px;
 }
 
 /* ── Idle Controller: typing cursor animation ───────────────────────────── */
 @keyframes blink-cursor {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
 }
 
 .idle-typing {
-  font-family: monospace;
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(4px);
-  padding: 0.25rem 0.75rem;
-  border-radius: 0.5rem;
-  display: inline-flex;
-  align-items: center;
+    font-family: monospace;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem;
+    display: inline-flex;
+    align-items: center;
 }
 
 .idle-cursor {
-  animation: blink-cursor 1s step-end infinite;
-  margin-left: 1px;
-  color: rgba(255, 255, 255, 0.8);
+    animation: blink-cursor 1s step-end infinite;
+    margin-left: 1px;
+    color: rgba(255, 255, 255, 0.8);
 }
 

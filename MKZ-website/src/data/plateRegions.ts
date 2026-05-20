@@ -12,9 +12,7 @@ import type { CityKey } from './cities';
 
 /** Map from plate prefix (uppercase) → city key */
 export const PLATE_PREFIX_MAP: Record<string, CityKey> = {
-  M: 'munich',
-  B: 'berlin',
-  KA: 'karlsruhe',
+  M: 'munich', B: 'berlin', KA: 'karlsruhe',
 } as const;
 
 /**

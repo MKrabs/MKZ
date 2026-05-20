@@ -1,4 +1,4 @@
-import { onMount, onCleanup, createEffect, createSignal } from 'solid-js';
+import { createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import { useMap } from '~/components/map';
 import pb from '~/lib/pb';
 
@@ -15,8 +15,7 @@ export const IDLE_CODE_EVENT = 'idle:plate-code' as const;
 export interface IdlePlateCodeEvent extends CustomEvent {
   detail: {
     /** The fully-typed code being shown, or '' when cleared */
-    code: string;
-    /** False when the animation has stopped entirely */
+    code: string; /** False when the animation has stopped entirely */
     active: boolean;
   };
 }
@@ -62,9 +61,7 @@ async function fetchRandomCode(): Promise<string> {
 }
 
 function fireIdleEvent(input: HTMLInputElement, code: string, active: boolean) {
-  input.dispatchEvent(
-    new CustomEvent(IDLE_CODE_EVENT, { bubbles: true, detail: { code, active } }),
-  );
+  input.dispatchEvent(new CustomEvent(IDLE_CODE_EVENT, { bubbles: true, detail: { code, active } }));
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -145,30 +142,35 @@ export function IdleController() {
     log(`effect — isIdle=${idle}, inputValue="${value}"`);
 
     if (!idle) return;
-    if (value !== '') { stopAnimation('input has value'); return; }
+    if (value !== '') {
+      stopAnimation('input has value');
+      return;
+    }
     startAnimation();
   });
 
   onMount(() => {
     const input = document.querySelector<HTMLInputElement>('[data-testid="license-plate-input"]');
-    if (!input) { err('input not found'); return; }
+    if (!input) {
+      err('input not found');
+      return;
+    }
 
     setInputValue(input.value);
 
-    const onFocus    = () => stopAnimation('focus');
-    const onKeydown  = (e: KeyboardEvent) => {
-      if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete')
-        stopAnimation(`keydown: ${e.key}`);
+    const onFocus = () => stopAnimation('focus');
+    const onKeydown = (e: KeyboardEvent) => {
+      if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete') stopAnimation(`keydown: ${e.key}`);
     };
-    const onInput    = () => {
+    const onInput = () => {
       setInputValue(input.value);
       if (input.value !== '') stopAnimation('input non-empty');
     };
     const onDragStart = () => stopAnimation('map drag');
 
-    input.addEventListener('focus',   onFocus);
+    input.addEventListener('focus', onFocus);
     input.addEventListener('keydown', onKeydown);
-    input.addEventListener('input',   onInput);
+    input.addEventListener('input', onInput);
 
     // Attach map dragstart once the map instance is available.
     let mapListenerAttached = false;
@@ -181,9 +183,9 @@ export function IdleController() {
     });
 
     onCleanup(() => {
-      input.removeEventListener('focus',   onFocus);
+      input.removeEventListener('focus', onFocus);
       input.removeEventListener('keydown', onKeydown);
-      input.removeEventListener('input',   onInput);
+      input.removeEventListener('input', onInput);
       mapCtx.map()?.off('dragstart', onDragStart);
       loopAbort?.abort();
       loopAbort = null;

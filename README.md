@@ -1,8 +1,8 @@
 # MKZ — Monorepo
 
-| Service | Path | Image |
-|---------|------|-------|
-| Frontend (SolidJS + Vite) | `MKZ-website/` | `ghcr.io/<owner>/mkz-website` |
+| Service                              | Path              | Image                            |
+|--------------------------------------|-------------------|----------------------------------|
+| Frontend (SolidJS + Vite)            | `MKZ-website/`    | `ghcr.io/<owner>/mkz-website`    |
 | Backend (PocketBase + Go migrations) | `MKZ-pocketbase/` | `ghcr.io/<owner>/mkz-pocketbase` |
 
 ## Release pipeline
@@ -15,6 +15,7 @@ git push origin v1.2.3
 ```
 
 The workflow (`.github/workflows/release.yml`):
+
 1. Runs frontend tests (`npm run test:run`)
 2. Validates Go build (`go build && go vet`)
 3. Builds and pushes both Docker images to `ghcr.io` — tagged `v1.2.3` **and** `latest`

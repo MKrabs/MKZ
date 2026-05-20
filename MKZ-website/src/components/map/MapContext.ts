@@ -2,8 +2,8 @@
  * SolidJS context for sharing the MapLibre map instance
  * and map control functions across the component tree.
  */
-import { createContext, useContext, type Accessor } from 'solid-js';
 import type maplibregl from 'maplibre-gl';
+import { type Accessor, createContext, useContext } from 'solid-js';
 
 export interface MapContextValue {
   /** The MapLibre Map instance, null until loaded */
@@ -28,12 +28,11 @@ export interface MapContextValue {
 }
 
 export const MapContext = createContext<MapContextValue>({
-  map: () => null,
-  flyToCity: () => {},
-  flyToCoords: () => {},
-  isIdle: () => false,
-  stopIdle: () => {},
-  startIdle: () => {},
+  map: () => null, flyToCity: () => {
+  }, flyToCoords: () => {
+  }, isIdle: () => false, stopIdle: () => {
+  }, startIdle: () => {
+  },
 });
 
 export function useMap(): MapContextValue {

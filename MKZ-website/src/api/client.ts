@@ -15,10 +15,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   try {
     response = await fetch(`${BASE_URL}${path}`, {
       headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-      ...options,
+        'Content-Type': 'application/json', ...options?.headers,
+      }, ...options,
     });
   } catch (err) {
     // Network error — backend is down, no internet, CORS, etc.
@@ -48,17 +46,13 @@ export interface LoginResponse {
 }
 
 export const auth = {
-  register: (displayName: string, countryCode: string) =>
-    request<LoginResponse>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ displayName, countryCode }),
-    }),
+  register: (displayName: string, countryCode: string) => request<LoginResponse>('/auth/register', {
+    method: 'POST', body: JSON.stringify({ displayName, countryCode }),
+  }),
 
-  login: (userId: string) =>
-    request<LoginResponse>(`/auth/login/${userId}`, { method: 'POST' }),
+  login: (userId: string) => request<LoginResponse>(`/auth/login/${userId}`, { method: 'POST' }),
 
-  getUser: (userId: string) =>
-    request<User>(`/auth/user/${userId}`),
+  getUser: (userId: string) => request<User>(`/auth/user/${userId}`),
 };
 
 // ─── Plates ──────────────────────────────────────────────────────────
@@ -74,28 +68,20 @@ export interface PlateCollectionResult {
     collectedAt: string;
   };
   challengeUpdates: Array<{
-    challengeId: number;
-    challengeName: string;
-    previousScore: number;
-    newScore: number;
+    challengeId: number; challengeName: string; previousScore: number; newScore: number;
   }>;
 }
 
 export const plates = {
-  collect: (userId: string, plateText: string, region?: string, city?: string, imageUrl?: string) =>
-    request<PlateCollectionResult>(`/plates/${userId}`, {
-      method: 'POST',
-      body: JSON.stringify({ plateText, region, city, imageUrl }),
-    }),
+  collect: (userId: string, plateText: string, region?: string, city?: string, imageUrl?: string) => request<PlateCollectionResult>(`/plates/${userId}`, {
+    method: 'POST', body: JSON.stringify({ plateText, region, city, imageUrl }),
+  }),
 
-  getUserPlates: (userId: string) =>
-    request<PlateCollectionResult['plate'][]>(`/plates/${userId}`),
+  getUserPlates: (userId: string) => request<PlateCollectionResult['plate'][]>(`/plates/${userId}`),
 
-  getCount: (userId: string) =>
-    request<{ count: number }>(`/plates/${userId}/count`),
+  getCount: (userId: string) => request<{ count: number }>(`/plates/${userId}/count`),
 
-  getRegions: (userId: string) =>
-    request<{ regions: string[] }>(`/plates/${userId}/regions`),
+  getRegions: (userId: string) => request<{ regions: string[] }>(`/plates/${userId}/regions`),
 };
 
 // ─── Challenges ──────────────────────────────────────────────────────
@@ -120,40 +106,28 @@ export interface Leaderboard {
   challengeId: number;
   challengeName: string;
   entries: Array<{
-    rank: number;
-    userId: string;
-    displayName: string;
-    score: number;
-    isFriend: boolean;
+    rank: number; userId: string; displayName: string; score: number; isFriend: boolean;
   }>;
   userRank: number | null;
   userScore: number | null;
 }
 
 export const challenges = {
-  getActive: () =>
-    request<Challenge[]>('/challenges'),
+  getActive: () => request<Challenge[]>('/challenges'),
 
-  get: (id: number) =>
-    request<Challenge>(`/challenges/${id}`),
+  get: (id: number) => request<Challenge>(`/challenges/${id}`),
 
-  getUserChallenges: (userId: string) =>
-    request<Challenge[]>(`/challenges/user/${userId}`),
+  getUserChallenges: (userId: string) => request<Challenge[]>(`/challenges/user/${userId}`),
 
-  join: (challengeId: number, userId: string, visibility?: string) =>
-    request<any>(`/challenges/${challengeId}/join/${userId}`, {
-      method: 'POST',
-      body: JSON.stringify({ visibility }),
-    }),
+  join: (challengeId: number, userId: string, visibility?: string) => request<any>(`/challenges/${challengeId}/join/${userId}`, {
+    method: 'POST', body: JSON.stringify({ visibility }),
+  }),
 
-  getLeaderboard: (challengeId: number, viewerUserId: string) =>
-    request<Leaderboard>(`/challenges/${challengeId}/leaderboard/${viewerUserId}`),
+  getLeaderboard: (challengeId: number, viewerUserId: string) => request<Leaderboard>(`/challenges/${challengeId}/leaderboard/${viewerUserId}`),
 
-  submit: (challengeId: number, userId: string, data: string, score: number) =>
-    request<any>(`/challenges/${challengeId}/submit/${userId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ submissionData: data, submissionScore: score }),
-    }),
+  submit: (challengeId: number, userId: string, data: string, score: number) => request<any>(`/challenges/${challengeId}/submit/${userId}`, {
+    method: 'PUT', body: JSON.stringify({ submissionData: data, submissionScore: score }),
+  }),
 };
 
 // ─── Friends ─────────────────────────────────────────────────────────
@@ -166,20 +140,15 @@ export interface Friend {
 }
 
 export const friends = {
-  list: (userId: string) =>
-    request<Friend[]>(`/friends/${userId}`),
+  list: (userId: string) => request<Friend[]>(`/friends/${userId}`),
 
-  sendRequest: (userId: string, friendId: string) =>
-    request<any>(`/friends/${userId}/request`, {
-      method: 'POST',
-      body: JSON.stringify({ friendId }),
-    }),
+  sendRequest: (userId: string, friendId: string) => request<any>(`/friends/${userId}/request`, {
+    method: 'POST', body: JSON.stringify({ friendId }),
+  }),
 
-  accept: (userId: string, requesterId: string) =>
-    request<any>(`/friends/${userId}/accept`, {
-      method: 'POST',
-      body: JSON.stringify({ friendId: requesterId }),
-    }),
+  accept: (userId: string, requesterId: string) => request<any>(`/friends/${userId}/accept`, {
+    method: 'POST', body: JSON.stringify({ friendId: requesterId }),
+  }),
 };
 
 // ─── Profile ─────────────────────────────────────────────────────────
@@ -195,25 +164,20 @@ export interface UserProfile {
   activeBorderColour: { colourValue: string; label: string } | null;
   activeNameColour: { colourValue: string; label: string } | null;
   displayedTrophies: Array<{
-    trophyName: string;
-    trophyIconKey: string;
-    place: number | null;
-    score: number | null;
+    trophyName: string; trophyIconKey: string; place: number | null; score: number | null;
   }>;
 }
 
 export const profile = {
-  get: (userId: string) =>
-    request<UserProfile>(`/profile/${userId}`),
+  get: (userId: string) => request<UserProfile>(`/profile/${userId}`),
 
-  update: (userId: string, data: Partial<Pick<UserProfile, 'city' | 'whoCanAddMe' | 'whoCanSeeProfile'>>) =>
-    request<UserProfile>(`/profile/${userId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
+  update: (userId: string, data: Partial<Pick<UserProfile, 'city' | 'whoCanAddMe' | 'whoCanSeeProfile'>>) => request<UserProfile>(`/profile/${userId}`, {
+    method: 'PUT', body: JSON.stringify(data),
+  }),
 
-  recordActivity: (userId: string) =>
-    request<{ hotStreakDays: number }>(`/profile/${userId}/activity`, { method: 'POST' }),
+  recordActivity: (userId: string) => request<{
+    hotStreakDays: number
+  }>(`/profile/${userId}/activity`, { method: 'POST' }),
 };
 
 export default { auth, plates, challenges, friends, profile };

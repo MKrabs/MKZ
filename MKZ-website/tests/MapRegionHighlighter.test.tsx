@@ -13,7 +13,7 @@ vi.mock('../src/api/kennzeichen', async (importOriginal) => {
   };
 });
 
-import { fetchGeoRegions } from '../src/api/kennzeichen';
+import { fetchGeoRegions } from '~/api/kennzeichen';
 
 const MOCK_REGIONS = [
   {

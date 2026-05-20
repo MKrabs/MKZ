@@ -31,18 +31,13 @@ export interface SeenPlateRecord {
  * Check whether the user has already logged a specific plate text.
  * Returns null if not found or if any error occurs.
  */
-export async function checkSeen(
-  userId: string,
-  plateText: string,
-): Promise<SeenPlateRecord | null> {
+export async function checkSeen(userId: string, plateText: string): Promise<SeenPlateRecord | null> {
   if (!userId || !plateText.trim()) return null;
 
   try {
     return await pb
       .collection('seen_plates')
-      .getFirstListItem<SeenPlateRecord>(
-        `user = "${userId}" && plate_text = "${plateText.trim().toUpperCase()}"`,
-      );
+      .getFirstListItem<SeenPlateRecord>(`user = "${userId}" && plate_text = "${plateText.trim().toUpperCase()}"`);
   } catch {
     return null; // 404 = not logged yet
   }
@@ -52,8 +47,7 @@ export async function checkSeen(
 export async function listSeen(userId: string): Promise<SeenPlateRecord[]> {
   if (!userId) return [];
   const result = await pb.collection('seen_plates').getList<SeenPlateRecord>(1, 500, {
-    filter: `user = "${userId}"`,
-    sort: '-noted_at',
+    filter: `user = "${userId}"`, sort: '-noted_at',
   });
   return result.items;
 }
@@ -62,15 +56,12 @@ export async function listSeen(userId: string): Promise<SeenPlateRecord[]> {
 
 /**
  * Log a newly-spotted plate.
+ * @param userId         The `id` of the user (not the display name).
  * @param kennzeichenId  The `id` of the kennzeichen record (not the code string).
+ * @param plateText      The exact plate text as typed by the user, e.g. "KA NR 355". Case and whitespace are normalized, but no other validation is done.
  * @param imageFile      Optional proof photo.
  */
-export async function markSeen(
-  userId: string,
-  kennzeichenId: string,
-  plateText: string,
-  imageFile?: File,
-): Promise<SeenPlateRecord> {
+export async function markSeen(userId: string, kennzeichenId: string, plateText: string, imageFile?: File): Promise<SeenPlateRecord> {
   if (imageFile) {
     const fd = new FormData();
     fd.append('user', userId);
@@ -81,19 +72,14 @@ export async function markSeen(
   }
 
   return pb.collection('seen_plates').create<SeenPlateRecord>({
-    user: userId,
-    kennzeichen: kennzeichenId,
-    plate_text: plateText.trim().toUpperCase(),
+    user: userId, kennzeichen: kennzeichenId, plate_text: plateText.trim().toUpperCase(),
   });
 }
 
 /**
  * Add or replace the photo on an existing seen-plate entry.
  */
-export async function updateSeenImage(
-  recordId: string,
-  imageFile: File,
-): Promise<SeenPlateRecord> {
+export async function updateSeenImage(recordId: string, imageFile: File): Promise<SeenPlateRecord> {
   const fd = new FormData();
   fd.append('image', imageFile);
   return pb.collection('seen_plates').update<SeenPlateRecord>(recordId, fd);
@@ -103,10 +89,7 @@ export async function updateSeenImage(
  * Remove the photo from an existing entry (the entry itself is kept).
  * PocketBase file-delete syntax: `fieldName-` = filename to remove.
  */
-export async function removeSeenImage(
-  recordId: string,
-  imageFilename: string,
-): Promise<SeenPlateRecord> {
+export async function removeSeenImage(recordId: string, imageFilename: string): Promise<SeenPlateRecord> {
   return pb.collection('seen_plates').update<SeenPlateRecord>(recordId, {
     'image-': imageFilename,
   });

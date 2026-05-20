@@ -18,25 +18,28 @@
 
 'use strict';
 
-const fs   = require('fs');
+const fs = require('fs');
 const path = require('path');
 
 // ─── CLI args ────────────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
+
 function getArg(flag) {
   const i = args.indexOf(flag);
-  return i !== -1 ? args[i + 1] : null;
+  return i !== -1
+         ? args[i + 1]
+         : null;
 }
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 
-const lowPath  = getArg('--low')  ?? path.join(repoRoot, 'MKZ-website/src/data/region-outlines-low.json');
+const lowPath = getArg('--low') ?? path.join(repoRoot, 'MKZ-website/src/data/region-outlines-low.json');
 const highPath = getArg('--high') ?? path.join(repoRoot, 'MKZ-website/src/data/region-outlines-high.json');
-const outDir   = getArg('--out')  ?? path.join(repoRoot, 'MKZ-pocketbase/migrations');
+const outDir = getArg('--out') ?? path.join(repoRoot, 'MKZ-pocketbase/migrations');
 
 const TS_CREATE = 1747500001;
-const TS_SEED   = 1747500002;
+const TS_SEED = 1747500002;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -44,11 +47,17 @@ function readGeoJSON(filePath) {
   const abs = path.resolve(filePath);
   if (!fs.existsSync(abs)) throw new Error(`File not found: ${abs}`);
   let raw;
-  try { raw = fs.readFileSync(abs, 'utf8'); }
-  catch (e) { throw new Error(`Could not read ${abs}: ${e.message}`); }
+  try {
+    raw = fs.readFileSync(abs, 'utf8');
+  } catch (e) {
+    throw new Error(`Could not read ${abs}: ${e.message}`);
+  }
   let parsed;
-  try { parsed = JSON.parse(raw); }
-  catch (e) { throw new Error(`Invalid JSON in ${abs}: ${e.message}`); }
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    throw new Error(`Invalid JSON in ${abs}: ${e.message}`);
+  }
   if (parsed.type !== 'FeatureCollection' || !Array.isArray(parsed.features)) {
     throw new Error(`${abs} is not a valid GeoJSON FeatureCollection`);
   }
@@ -56,21 +65,42 @@ function readGeoJSON(filePath) {
 }
 
 function extractFeatures(geojson, label) {
-  const map     = new Map();
+  const map = new Map();
   const skipped = [];
 
   for (let i = 0; i < geojson.features.length; i++) {
     const f = geojson.features[i];
-    if (!f || typeof f !== 'object')                                         { skipped.push(`[${label}] #${i}: not an object`); continue; }
-    if (!f.properties)                                                       { skipped.push(`[${label}] #${i}: missing properties`); continue; }
+    if (!f || typeof f !== 'object') {
+      skipped.push(`[${label}] #${i}: not an object`);
+      continue;
+    }
+    if (!f.properties) {
+      skipped.push(`[${label}] #${i}: missing properties`);
+      continue;
+    }
     const ags = f.properties.ags;
     const gen = f.properties.gen;
-    if (!ags || typeof ags !== 'string' || ags.trim() === '')                { skipped.push(`[${label}] #${i} (gen="${gen}"): missing/empty ags`); continue; }
-    if (!gen || typeof gen !== 'string' || gen.trim() === '')                { skipped.push(`[${label}] #${i} (ags="${ags}"): missing/empty gen`); continue; }
-    if (!f.geometry?.type || !f.geometry?.coordinates)                      { skipped.push(`[${label}] #${i} (ags="${ags}"): missing geometry`); continue; }
-    if (f.geometry.type !== 'Polygon' && f.geometry.type !== 'MultiPolygon'){ skipped.push(`[${label}] #${i} (ags="${ags}"): unsupported geometry "${f.geometry.type}"`); continue; }
-    if (map.has(ags.trim()))                                                 { skipped.push(`[${label}] #${i} (ags="${ags}"): duplicate, keeping first`); continue; }
-    map.set(ags.trim(), { ags: ags.trim(), gen: gen.trim(), geometry: f.geometry });
+    if (!ags || typeof ags !== 'string' || ags.trim() === '') {
+      skipped.push(`[${label}] #${i} (gen="${gen}"): missing/empty ags`);
+      continue;
+    }
+    if (!gen || typeof gen !== 'string' || gen.trim() === '') {
+      skipped.push(`[${label}] #${i} (ags="${ags}"): missing/empty gen`);
+      continue;
+    }
+    if (!f.geometry?.type || !f.geometry?.coordinates) {
+      skipped.push(`[${label}] #${i} (ags="${ags}"): missing geometry`);
+      continue;
+    }
+    if (f.geometry.type !== 'Polygon' && f.geometry.type !== 'MultiPolygon') {
+      skipped.push(`[${label}] #${i} (ags="${ags}"): unsupported geometry "${f.geometry.type}"`);
+      continue;
+    }
+    if (map.has(ags.trim())) {
+      skipped.push(`[${label}] #${i} (ags="${ags}"): duplicate, keeping first`);
+      continue;
+    }
+    map.set(ags.trim(), {ags: ags.trim(), gen: gen.trim(), geometry: f.geometry});
   }
 
   if (skipped.length > 0) {
@@ -96,26 +126,32 @@ const lowGeo = readGeoJSON(lowPath);
 console.log(`Reading high: ${highPath}`);
 const highGeo = readGeoJSON(highPath);
 
-const lowMap  = extractFeatures(lowGeo,  'low');
+const lowMap = extractFeatures(lowGeo, 'low');
 const highMap = extractFeatures(highGeo, 'high');
 
-const onlyInLow  = [...lowMap.keys()].filter(k => !highMap.has(k));
+const onlyInLow = [...lowMap.keys()].filter(k => !highMap.has(k));
 const onlyInHigh = [...highMap.keys()].filter(k => !lowMap.has(k));
-if (onlyInLow.length)  { console.warn(`\n⚠️  ${onlyInLow.length} ags in LOW only:`);  onlyInLow.forEach(k  => console.warn(`   ${k} (${lowMap.get(k).gen})`)); }
-if (onlyInHigh.length) { console.warn(`\n⚠️  ${onlyInHigh.length} ags in HIGH only:`); onlyInHigh.forEach(k => console.warn(`   ${k} (${highMap.get(k).gen})`)); }
+if (onlyInLow.length) {
+  console.warn(`\n⚠️  ${onlyInLow.length} ags in LOW only:`);
+  onlyInLow.forEach(k => console.warn(`   ${k} (${lowMap.get(k).gen})`));
+}
+if (onlyInHigh.length) {
+  console.warn(`\n⚠️  ${onlyInHigh.length} ags in HIGH only:`);
+  onlyInHigh.forEach(k => console.warn(`   ${k} (${highMap.get(k).gen})`));
+}
 
 const allAgs = new Set([...lowMap.keys(), ...highMap.keys()]);
 console.log(`\n✅ Unique ags codes: ${allAgs.size} (low: ${lowMap.size}, high: ${highMap.size})`);
 
 // ─── Output dir + package name ────────────────────────────────────────────────
 
-fs.mkdirSync(path.resolve(outDir), { recursive: true });
+fs.mkdirSync(path.resolve(outDir), {recursive: true});
 
 let packageName = 'migrations';
 const existingGoFiles = fs.readdirSync(outDir).filter(f => f.endsWith('.go'));
 if (existingGoFiles.length > 0) {
   const sample = fs.readFileSync(path.join(outDir, existingGoFiles[0]), 'utf8');
-  const match  = sample.match(/^package\s+(\w+)/m);
+  const match = sample.match(/^package\s+(\w+)/m);
   if (match) packageName = match[1];
 }
 console.log(`Using Go package name: "${packageName}"`);
@@ -182,16 +218,20 @@ const BATCH_SIZE = 50;
 const rows = [];
 
 for (const ags of allAgs) {
-  const low  = lowMap.get(ags);
+  const low = lowMap.get(ags);
   const high = highMap.get(ags);
-  const gen  = (low ?? high).gen;
+  const gen = (low ?? high).gen;
   rows.push({
     ags,
     gen,
-    lowJSON:  low  ? `\`${geometryToGoRawString(low.geometry)}\``  : `""`,
-    highJSON: high ? `\`${geometryToGoRawString(high.geometry)}\`` : `""`,
-    hasLow:   !!low,
-    hasHigh:  !!high,
+    lowJSON: low
+             ? `\`${geometryToGoRawString(low.geometry)}\``
+             : `""`,
+    highJSON: high
+              ? `\`${geometryToGoRawString(high.geometry)}\``
+              : `""`,
+    hasLow: !!low,
+    hasHigh: !!high,
   });
 }
 
@@ -204,7 +244,7 @@ for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     lines.push(`\t\t\trec := core.NewRecord(collection)`);
     lines.push(`\t\t\trec.Set("ags", "${r.ags}")`);
     lines.push(`\t\t\trec.Set("gen", \`${escapeGoRawString(r.gen)}\`)`);
-    if (r.hasLow)  lines.push(`\t\t\trec.Set("low",  ${r.lowJSON})`);
+    if (r.hasLow) lines.push(`\t\t\trec.Set("low",  ${r.lowJSON})`);
     if (r.hasHigh) lines.push(`\t\t\trec.Set("high", ${r.highJSON})`);
     lines.push(`\t\t\tif err := app.Save(rec); err != nil { return err }`);
     lines.push(`\t\t}`);

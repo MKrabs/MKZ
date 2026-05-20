@@ -30,10 +30,9 @@ const LAYER_JSON = JSON.stringify({
       workspaceId: 'gdb',
       query: 'SELECT * FROM verwaltungsgrenzen_gesamt WHERE typ = 3 AND jahr = 2022',
       oidFields: 'id',
-      spatialReference: { wkid: 25832 },
+      spatialReference: {wkid: 25832},
       type: 'queryTable',
-    },
-    type: 'dataLayer',
+    }, type: 'dataLayer',
   },
 });
 
@@ -80,14 +79,13 @@ async function fetchAll(maxAllowableOffset = null) {
   }
 
   return {
-    type: 'FeatureCollection',
-    features: allFeatures,
+    type: 'FeatureCollection', features: allFeatures,
   };
 }
 
 async function main() {
   const outDir = path.join(__dirname, '..', 'src', 'data');
-  fs.mkdirSync(outDir, { recursive: true });
+  fs.mkdirSync(outDir, {recursive: true});
 
   // High resolution (full detail)
   console.log('Fetching HIGH-RES region outlines...');

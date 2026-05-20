@@ -19,7 +19,7 @@ export interface GeoRegionRecord {
   id: string;
   ags: string;
   gen: string;
-  low:  object | null;
+  low: object | null;
   high: object | null;
 }
 
@@ -30,10 +30,9 @@ export interface GeoRegionRecord {
 export async function lookupCode(code: string): Promise<KennzeichenRecord | null> {
   if (!code) return null;
   try {
-    const record = await pb
+    return await pb
       .collection('kennzeichen')
       .getFirstListItem<KennzeichenRecord>(`code = "${code.toUpperCase()}"`);
-    return record;
   } catch {
     return null;
   }
@@ -46,18 +45,15 @@ export async function lookupCode(code: string): Promise<KennzeichenRecord | null
  * @param kennzeichenId  The kennzeichen record id
  * @param quality        'low' (default, fast) or 'high' (detailed)
  */
-export async function fetchGeoRegions(
-  kennzeichenId: string,
-  quality: 'low' | 'high' = 'low',
-): Promise<GeoRegionRecord[]> {
+export async function fetchGeoRegions(kennzeichenId: string, quality: 'low' | 'high' = 'low'): Promise<GeoRegionRecord[]> {
   if (!kennzeichenId) return [];
   try {
     const junctions = await pb
       .collection('kennzeichen_geo_regions')
       .getFullList({
-        filter:  `kennzeichen = "${kennzeichenId}"`,
-        expand:  'geo_region',
-        fields:  `id,expand.geo_region.id,expand.geo_region.ags,expand.geo_region.gen,expand.geo_region.${quality}`,
+        filter: `kennzeichen = "${kennzeichenId}"`,
+        expand: 'geo_region',
+        fields: `id,expand.geo_region.id,expand.geo_region.ags,expand.geo_region.gen,expand.geo_region.${quality}`,
       });
 
     return junctions
@@ -72,18 +68,13 @@ export async function fetchGeoRegions(
  * Build a GeoJSON FeatureCollection from an array of GeoRegionRecords.
  * Merges all regions into a single collection for MapLibre.
  */
-export function buildGeoJSON(
-  regions: GeoRegionRecord[],
-  quality: 'low' | 'high' = 'low',
-): GeoJSON.FeatureCollection {
+export function buildGeoJSON(regions: GeoRegionRecord[], quality: 'low' | 'high' = 'low'): GeoJSON.FeatureCollection {
   const features: GeoJSON.Feature[] = regions
     .map((r) => {
       const geometry = r[quality];
       if (!geometry) return null;
       return {
-        type:       'Feature' as const,
-        geometry:   geometry as GeoJSON.Geometry,
-        properties: { ags: r.ags, gen: r.gen },
+        type: 'Feature' as const, geometry: geometry as GeoJSON.Geometry, properties: { ags: r.ags, gen: r.gen },
       };
     })
     .filter((f): f is GeoJSON.Feature => f !== null);

@@ -7,25 +7,25 @@
  *
  * Replaces the old local-JSON / name-based lookup entirely.
  */
-import { Component, createEffect, onCleanup } from 'solid-js';
-import { useMap } from './MapContext';
-import { fetchGeoRegions, buildGeoJSON } from '~/api/kennzeichen';
 import type maplibregl from 'maplibre-gl';
+import { Component, createEffect, onCleanup } from 'solid-js';
+import { buildGeoJSON, fetchGeoRegions } from '~/api/kennzeichen';
+import { useMap } from './MapContext';
 
 interface Props {
   /** The kennzeichen record id to highlight, or null to clear. */
   kennzeichenId: string | null;
 }
 
-const SOURCE_ID  = 'mkz-region-highlight-source';
+const SOURCE_ID = 'mkz-region-highlight-source';
 const FILL_LAYER = 'mkz-region-highlight-fill';
 const LINE_LAYER = 'mkz-region-highlight-line';
 
 function clearLayers(m: maplibregl.Map) {
   try {
-    if (m.getLayer?.(FILL_LAYER))  m.removeLayer(FILL_LAYER);
-    if (m.getLayer?.(LINE_LAYER))  m.removeLayer(LINE_LAYER);
-    if (m.getSource?.(SOURCE_ID))  m.removeSource(SOURCE_ID);
+    if (m.getLayer?.(FILL_LAYER)) m.removeLayer(FILL_LAYER);
+    if (m.getLayer?.(LINE_LAYER)) m.removeLayer(LINE_LAYER);
+    if (m.getSource?.(SOURCE_ID)) m.removeSource(SOURCE_ID);
   } catch {
     // ignore — map may not be fully initialised in tests
   }
@@ -43,17 +43,11 @@ function applyGeoJSON(m: maplibregl.Map, geojson: GeoJSON.FeatureCollection) {
     if (m.getLayer?.(LINE_LAYER)) m.removeLayer(LINE_LAYER);
 
     m.addLayer({
-      id:     FILL_LAYER,
-      type:   'fill',
-      source: SOURCE_ID,
-      paint:  { 'fill-color': '#f59e0b', 'fill-opacity': 0.25 },
+      id: FILL_LAYER, type: 'fill', source: SOURCE_ID, paint: { 'fill-color': '#f59e0b', 'fill-opacity': 0.25 },
     });
 
     m.addLayer({
-      id:     LINE_LAYER,
-      type:   'line',
-      source: SOURCE_ID,
-      paint:  { 'line-color': '#f59e0b', 'line-width': 2 },
+      id: LINE_LAYER, type: 'line', source: SOURCE_ID, paint: { 'line-color': '#f59e0b', 'line-width': 2 },
     });
   } catch (e) {
     console.warn('[MapRegionHighlighter] could not apply layers', e);
@@ -67,9 +61,9 @@ const MapRegionHighlighter: Component<Props> = (props) => {
   let fetchSeq = 0;
 
   createEffect(() => {
-    const m    = mapCtx.map();
+    const m = mapCtx.map();
     const kzId = props.kennzeichenId;
-    const seq  = ++fetchSeq;
+    const seq = ++fetchSeq;
 
     if (!m) return;
 
