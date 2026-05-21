@@ -73,6 +73,23 @@ function regionsCenter(regions: { low: any }[]): [number, number] | null {
   return bboxCenter(allCoords);
 }
 
+/**
+ * Compute an overall bounding box (SW/NE) across all region geometries.
+ * Uses outer rings only and works with Polygon or MultiPolygon.
+ */
+function regionsBBox(regions: { low: any }[]) {
+  const all = regions.flatMap((r) => flattenCoords(r.low));
+  if (all.length === 0) return null;
+  let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
+  for (const [lon, lat] of all) {
+    if (lon < minLon) minLon = lon;
+    if (lon > maxLon) maxLon = lon;
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+  }
+  return { sw: [minLon, minLat] as [number, number], ne: [maxLon, maxLat] as [number, number] };
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const PlateSubmission: Component = () => {
@@ -142,19 +159,12 @@ const PlateSubmission: Component = () => {
             const m = mapCtx.map();
 
             // Build bounding box from low-res geometries
-            const allCoords = regions.flatMap((r) => flattenCoords(r.low));
-            if (m && allCoords.length > 0) {
-              const lons = allCoords.map((c) => c[0]);
-              const lats = allCoords.map((c) => c[1]);
-              const sw: [number, number] = [Math.min(...lons), Math.min(...lats)];
-              const ne: [number, number] = [Math.max(...lons), Math.max(...lats)];
-
+            const bbox = regionsBBox(regions);
+            if (m && bbox) {
+              const { sw, ne } = bbox;
               try {
-                // Use fitBounds so the map chooses an appropriate zoom, but cap maxZoom
-                // so we never zoom excessively close.
                 (m as any).fitBounds([sw, ne], { padding: 80, maxZoom: 11, duration: 2200, linear: true });
               } catch (e) {
-                // Fallback to flyToCoords with a sensible default zoom
                 mapCtx.flyToCoords(center, REGION_ZOOM, computePreviewOffset());
               }
             } else {
