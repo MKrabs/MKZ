@@ -2,6 +2,7 @@ import { Component, createSignal, Show } from 'solid-js';
 import { logout, user } from '~/store/auth';
 import { AuthModal } from '../auth';
 import ProfileAvatar from '../common/ProfileAvatar';
+import VersionBadge from '../common/VersionBadge';
 
 const TitleBar: Component = () => {
   const [menuOpen, setMenuOpen] = createSignal(false);
@@ -104,6 +105,11 @@ const TitleBar: Component = () => {
                 </svg>
                 Sign Out
               </button>
+
+              <div class="mt-3 text-xs text-gray-400">
+                <div class="mb-1"><VersionBadge/></div>
+                <div>Made with love by Mkrabs</div>
+              </div>
             </div>
           </aside>
         </div>

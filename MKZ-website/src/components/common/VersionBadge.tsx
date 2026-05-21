@@ -1,7 +1,6 @@
 import { Component } from 'solid-js';
 
 function getEnvVersion() {
-  // Prefer Vite build-time env, fallback to runtime window.__ENV__ injected by Docker/entrypoint
   const v = (import.meta as any).env?.VITE_APP_VERSION;
   const c = (import.meta as any).env?.VITE_APP_COMMIT;
   if (v) return c ? `${v} · ${c}` : v;
@@ -14,11 +13,10 @@ function getEnvVersion() {
 }
 
 const VersionBadge: Component = () => {
-  const text = getEnvVersion();
   return (
-    <div data-testid="app-version-badge" title={`Version: ${text}`} class="fixed left-4 bottom-4 z-50">
-      <span class="inline-block px-2 py-1 text-xs rounded-md bg-black/30 text-white/80 hover:bg-black/60 hover:text-white transition-opacity opacity-60">{text}</span>
-    </div>
+    <span data-testid="app-version-badge" title={`Version: ${getEnvVersion()}`} class="text-xs text-gray-400">
+      {getEnvVersion()}
+    </span>
   );
 };
 
