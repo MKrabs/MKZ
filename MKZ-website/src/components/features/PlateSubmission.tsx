@@ -10,7 +10,6 @@ import { extractPlatePrefix } from '~/data/plateRegions';
 import { user } from '~/store/auth';
 import Button from '../common/Button';
 import LicensePlate from '../common/LicensePlate';
-import LoginNudge from '../common/LoginNudge';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -318,7 +317,7 @@ const PlateSubmission: Component = () => {
           <Show when={kennzeichen()}>
             <Show when={!user()}>
               <div data-testid="sign-in-to-collect">
-                <LoginNudge/>
+                <p class="text-sm text-gray-600">Sign in to collect and save plates.</p>
               </div>
             </Show>
 
