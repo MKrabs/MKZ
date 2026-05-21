@@ -163,7 +163,21 @@ const PlateSubmission: Component = () => {
             if (m && bbox) {
               const { sw, ne } = bbox;
               try {
-                (m as any).fitBounds([sw, ne], { padding: 80, maxZoom: 11, duration: 2200, linear: true });
+                // If previewRef is available, compute padding so the bbox fits inside the
+                // preview box rather than the full viewport.
+                let padding: number | { top: number; right: number; bottom: number; left: number } = 80;
+                if (previewRef) {
+                  const r = previewRef.getBoundingClientRect();
+                  const inner = 12; // inner padding inside the preview box
+                  padding = {
+                    left: Math.max(8, Math.round(r.left + inner)),
+                    top: Math.max(8, Math.round(r.top + inner)),
+                    right: Math.max(8, Math.round(window.innerWidth - r.right + inner)),
+                    bottom: Math.max(8, Math.round(window.innerHeight - r.bottom + inner)),
+                  };
+                }
+
+                (m as any).fitBounds([sw, ne], { padding, maxZoom: 11, duration: 2200, linear: true });
               } catch (e) {
                 mapCtx.flyToCoords(center, REGION_ZOOM, computePreviewOffset());
               }
