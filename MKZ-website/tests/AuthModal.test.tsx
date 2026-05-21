@@ -135,15 +135,15 @@ describe('AuthModal', () => {
     });
   });
 
-  it('closes when clicking the backdrop', () => {
+  it('closes when clicking the backdrop', async () => {
     render(() => <AuthModal onClose={onClose}/>);
     fireEvent.click(screen.getByTestId('auth-modal-backdrop'));
-    expect(onClose).toHaveBeenCalled();
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
-  it('closes when clicking the X button', () => {
+  it('closes when clicking the X button', async () => {
     render(() => <AuthModal onClose={onClose}/>);
     fireEvent.click(screen.getByTestId('auth-modal-close'));
-    expect(onClose).toHaveBeenCalled();
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 });
