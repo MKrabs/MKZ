@@ -138,7 +138,28 @@ const PlateSubmission: Component = () => {
           const regions = await fetchGeoRegions(kz.id, 'low');
           const center = regionsCenter(regions);
           if (center) {
-            mapCtx.flyToCoords(center, REGION_ZOOM, computePreviewOffset());
+            // Try to fit the region bounds to the viewport to avoid zooming too far in.
+            const m = mapCtx.map();
+
+            // Build bounding box from low-res geometries
+            const allCoords = regions.flatMap((r) => flattenCoords(r.low));
+            if (m && allCoords.length > 0) {
+              const lons = allCoords.map((c) => c[0]);
+              const lats = allCoords.map((c) => c[1]);
+              const sw: [number, number] = [Math.min(...lons), Math.min(...lats)];
+              const ne: [number, number] = [Math.max(...lons), Math.max(...lats)];
+
+              try {
+                // Use fitBounds so the map chooses an appropriate zoom, but cap maxZoom
+                // so we never zoom excessively close.
+                (m as any).fitBounds([sw, ne], { padding: 80, maxZoom: 11, duration: 2200, linear: true });
+              } catch (e) {
+                // Fallback to flyToCoords with a sensible default zoom
+                mapCtx.flyToCoords(center, REGION_ZOOM, computePreviewOffset());
+              }
+            } else {
+              mapCtx.flyToCoords(center, REGION_ZOOM, computePreviewOffset());
+            }
           }
         }
       }
