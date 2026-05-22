@@ -26,6 +26,10 @@
   pointer-events: none;
 }
 
+.btn:hover {
+    cursor: pointer;
+}
+
 .btn__icon { display: inline-flex; align-items: center; }
 .btn__loading { display: inline-flex; align-items: center; gap: 0.5rem; }
 

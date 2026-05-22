@@ -1,4 +1,5 @@
 import { Component, createSignal, Show } from 'solid-js';
+import Button from './Button';
 
 interface ImagePreviewProps {
   src: string;
@@ -22,17 +23,19 @@ const ImagePreview: Component<ImagePreviewProps> = (props) => {
           onClick={() => setShowFull(true)}
         />
         <Show when={props.onDelete}>
-          <button
+          <Button
             onClick={(e) => {
               e.stopPropagation();
               props.onDelete?.();
             }}
-            class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+            size="sm"
+            variant="light"
+            class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs p-0 flex items-center justify-center hover:bg-red-600 transition-colors"
             aria-label="Delete image"
             data-testid="image-delete-btn"
           >
             ×
-          </button>
+          </Button>
         </Show>
       </div>
 
@@ -49,13 +52,15 @@ const ImagePreview: Component<ImagePreviewProps> = (props) => {
               alt={props.alt ?? 'Full preview'}
               class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
             />
-            <button
+            <Button
               onClick={() => setShowFull(false)}
-              class="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-gray-800 hover:bg-white transition-colors shadow"
+              size="sm"
+              variant="light"
+              class="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-gray-800 hover:bg-white transition-colors shadow p-0"
               aria-label="Close preview"
             >
               ×
-            </button>
+            </Button>
           </div>
         </div>
       </Show>
