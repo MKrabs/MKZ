@@ -1,0 +1,86 @@
+/* Button styles (plain CSS, read theme vars but do not redefine them) */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  line-height: 1;
+  border: 1px solid transparent;
+  transition: background-color 150ms ease, color 150ms ease, opacity 150ms ease, border-color 150ms ease;
+  user-select: none;
+}
+
+/* sizes */
+.btn--sm { padding: 0.25rem 0.5rem; font-size: 0.875rem; }
+.btn--md { padding: 0.5rem 1rem; font-size: 0.875rem; }
+.btn--lg { padding: 0.625rem 1.25rem; font-size: 1rem; }
+
+/* states */
+.btn.is-disabled,
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn__icon { display: inline-flex; align-items: center; }
+.btn__loading { display: inline-flex; align-items: center; gap: 0.5rem; }
+
+/* spinner */
+.btn__spinner { width: 1rem; height: 1rem; animation: btn-spin 1s linear infinite; }
+.btn__spinner-track { opacity: 0.25; }
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+
+/* Variant — primary */
+.btn--primary {
+  background: var(--color-mkz-primary, #2563eb);
+  color: white;
+  border-color: transparent;
+}
+.btn--primary:hover { background: var(--color-mkz-secondary, #1e40af); }
+
+/* Variant — secondary */
+.btn--secondary {
+  background: #f3f4f6; /* gray-100 */
+  color: #1f2937; /* gray-800 */
+  border-color: #e5e7eb; /* gray-200 */
+}
+.btn--secondary:hover { background: #e5e7eb; }
+
+/* Variant — light */
+.btn--light {
+  background: white;
+  color: #374151; /* gray-700 */
+  border-color: #e6e6e6;
+}
+.btn--light:hover { background: #f8fafc; }
+
+/* Variant — dark */
+.btn--dark {
+  background: #111827; /* gray-900 */
+  color: white;
+  border-color: transparent;
+}
+.btn--dark:hover { background: #0b1220; }
+
+/* Variant — accent (legacy) */
+.btn--accent {
+  background: var(--color-mkz-accent, #f59e0b);
+  color: #1f2937;
+  border-color: rgba(0,0,0,0.04);
+}
+.btn--accent:hover { filter: brightness(0.95); }
+
+/* Variant — ghost (legacy) */
+.btn--ghost {
+  background: transparent;
+  color: #4b5563; /* gray-600 */
+  border-color: transparent;
+}
+.btn--ghost:hover { background: rgba(15,23,42,0.03); }
+
+/* Accessibility helpers */
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
