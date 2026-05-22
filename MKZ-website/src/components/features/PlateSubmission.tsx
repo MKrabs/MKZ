@@ -10,6 +10,7 @@ import { extractPlatePrefix } from '~/data/plateRegions';
 import { user } from '~/store/auth';
 import Button from '../common/Button';
 import LicensePlate from '../common/LicensePlate';
+import Icon from '../common/Icon';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -333,13 +334,7 @@ const PlateSubmission: Component = () => {
           <Show when={kennzeichen()}>
             <div class="flex items-start gap-3 bg-blue-50/80 rounded-lg px-4 py-3 border border-blue-100/60"
                  data-testid="region-info">
-              <svg class="w-5 h-5 text-mkz-primary shrink-0 mt-0.5" fill="none" stroke="currentColor"
-                   viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
+              <Icon name="map-pin" class="w-5 h-5 text-mkz-primary shrink-0 mt-0.5" />
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-gray-800 truncate">{kennzeichen()!.district_name}</p>
                 <p class="text-xs text-gray-500">
@@ -364,6 +359,7 @@ const PlateSubmission: Component = () => {
               <div data-testid="sign-in-to-collect">
                 <p class="text-sm text-gray-600">Sign in to collect and save plates.</p>
               </div>
+              <Button variant="accent" class="pointer-events-auto">test</Button>
             </Show>
 
             <Show when={user()}>
@@ -372,10 +368,7 @@ const PlateSubmission: Component = () => {
                   when={pendingImageUrl()}
                   fallback={<label
                     class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm text-gray-600 w-fit">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
+                    <Icon name="camera" class="w-4 h-4" />
                     Add proof photo (optional)
                     <input ref={imageInputRef} type="file" accept="image/*" class="hidden"
                            onChange={handlePendingImageSelect} data-testid="image-upload-input"/>
@@ -386,9 +379,7 @@ const PlateSubmission: Component = () => {
                          class="h-14 w-20 object-cover rounded-lg border border-gray-200"/>
                     <div class="flex flex-col gap-1">
                       <span class="text-sm text-gray-600 font-medium">Photo ready</span>
-                      <button type="button" onClick={clearPendingImage}
-                              class="text-xs text-red-500 hover:underline w-fit">Remove
-                      </button>
+                      <Button type="button" onClick={clearPendingImage} size="sm" variant="ghost" class="text-xs text-red-500 hover:underline w-fit p-0">Remove</Button>
                     </div>
                   </div>
                 </Show>
@@ -412,12 +403,7 @@ const PlateSubmission: Component = () => {
                     <div class="flex items-center gap-3 flex-wrap">
                       <label
                         class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-mkz-primary text-white text-sm font-medium hover:bg-mkz-secondary transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
+                        <Icon name="camera" class="w-4 h-4" />
                         {submitting() ? 'Uploading…' : 'Add photo'}
                         <input ref={updateImageInputRef} type="file" accept="image/*" class="hidden"
                                onChange={handleAddPhoto} data-testid="add-photo-input"/>
@@ -443,28 +429,16 @@ const PlateSubmission: Component = () => {
                       <div class="flex flex-col gap-2">
                         <label
                           class="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm text-gray-600 transition-colors">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                          </svg>
+                          <Icon name="upload" class="w-4 h-4" />
                           {submitting() ? 'Updating…' : 'Change photo'}
                           <input ref={updateImageInputRef} type="file" accept="image/*" class="hidden"
                                  onChange={handleAddPhoto} data-testid="change-photo-input"/>
                         </label>
-                        <button type="button" onClick={handleRemovePhoto} disabled={submitting()}
-                                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-sm transition-colors disabled:opacity-50"
-                                data-testid="remove-photo-btn">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                          </svg>
+                        <Button type="button" onClick={handleRemovePhoto} disabled={submitting()} variant="light" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-sm transition-colors" data-testid="remove-photo-btn">
+                          <Icon name="trash-2" class="w-4 h-4" />
                           Remove photo
-                        </button>
-                        <button type="button" onClick={handleRemoveEntry} disabled={submitting()}
-                                class="text-xs text-gray-400 hover:text-red-500 hover:underline text-left transition-colors"
-                                data-testid="remove-seen-btn">
-                          Remove entire entry
-                        </button>
+                        </Button>
+                        <Button type="button" onClick={handleRemoveEntry} disabled={submitting()} variant="ghost" size="sm" class="text-xs text-gray-400 hover:text-red-500 hover:underline text-left transition-colors p-0" data-testid="remove-seen-btn">Remove entire entry</Button>
                       </div>
                     </div>
                   </Show>
@@ -474,22 +448,14 @@ const PlateSubmission: Component = () => {
 
             <Show when={submitSuccess()}>
               <span class="text-sm text-green-600 flex items-center gap-1" data-testid="submission-success">
-                <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clip-rule="evenodd"/>
-                </svg>
+                <Icon name="check-circle" class="w-4 h-4 shrink-0" />
                 Added to your collection!
               </span>
             </Show>
 
             <Show when={submitError()}>
               <span class="text-sm text-red-600 flex items-center gap-1" data-testid="submission-error">
-                <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                        clip-rule="evenodd"/>
-                </svg>
+                <Icon name="alert-circle" class="w-4 h-4 shrink-0" />
                 {submitError()}
               </span>
             </Show>
@@ -513,12 +479,7 @@ const PlateSubmission: Component = () => {
         </Show>
         <Show when={!kennzeichen() && !lookupLoading()}>
           <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4">
-            <svg class="w-8 h-8 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
+            <Icon name="map-pin" class="w-8 h-8 text-white/40" />
             <p class="text-white/50 text-xs text-center leading-relaxed">Type a plate<br/>to see the region</p>
           </div>
         </Show>
@@ -527,11 +488,7 @@ const PlateSubmission: Component = () => {
             <span
               class="inline-flex items-center gap-1.5 bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-sm font-medium"
               data-testid="preview-region-badge">
-              <svg class="w-3.5 h-3.5 text-mkz-accent" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd"
-                      d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                      clip-rule="evenodd"/>
-              </svg>
+              <Icon name="map-pin" class="w-3.5 h-3.5 text-mkz-accent" />
               {kennzeichen()!.district_name}
             </span>
           </div>
